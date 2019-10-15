@@ -1,0 +1,48 @@
+<!--pages/setting/index.wxml-->
+<zego-nav></zego-nav>
+
+<view class="settings">
+
+    <view class="items">
+        <label>appID:</label>
+        <input bindinput="inputChange" disabled value="{{_liveAppID}}" data-name="liveAppID"/>
+    </view>
+
+    <!--<view class="items">-->
+    <!--<label>appID(rtcroom):</label>-->
+    <!--<input bindinput="inputChange"  value="{{_rtcAppID}}" data-name="rtcAppID"/>-->
+    <!--</view>-->
+
+    <view class="items">
+        <label>tokenURL:</label>
+        <input bindinput="inputChange" disabled value="{{_tokenURL}}" data-name="tokenURL"/>
+    </view>
+
+    <view class="items">
+        <label>serverURL:</label>
+        <input bindinput="inputChange" disabled value="{{_wsServerURL}}" data-name="wsServerURL"/>
+    </view>
+
+    <view class="items">
+        <label>开启测试:</label>
+        <switch checked="{{!!_testEnvironment}}" bindchange="inputChange" data-name="testEnvironment"/>
+    </view>
+
+    <view class="items">
+        <label>roomListURL:</label>
+        <input bindinput="inputChange" disabled value="{{_roomListURL}}" data-name="roomListURL"/>
+    </view>
+
+</view>
+
+
+<view class="handler">
+    <view class="buttonGroup-top">
+        <button class="leftTop" bindtap="scanQR">扫描</button>
+        <button class="rightTop">xx</button>
+    </view>
+    <view class="buttonGroup-bottom">
+        <button class="leftBottom" bindtap="submit">确定</button>
+        <button class="rightBottom" bindtap="reset"> 重置</button>
+    </view>
+</view>
