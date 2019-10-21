@@ -1,6 +1,6 @@
 import { ZegoDataReport } from '../common/zego.datareport';
 import { ZegoPreview } from './zego.preview';
-import { MediaStreamConstraints, PlayOption, SignalInfo, ScreenConfig, ERRO } from '../common/zego.entity';
+import { MediaStreamConstraints, PlayOption, SignalInfo, ScreenConfig, ERRO, PublishOption } from '../common/zego.entity';
 import { ZegoStreamCenter } from '../common/ZegoStreamCenter';
 import { LoggerWeb } from './zego.logger.webrtc';
 import { StateCenter } from '../common/clientBase/stateCenter';
@@ -35,7 +35,7 @@ export declare class ZegoStreamCenterWeb extends ZegoStreamCenter {
     enableCamera(localStream: MediaStream, enable: boolean): boolean;
     startPreview(mediaStreamConstraints: MediaStreamConstraints, success: Function, error: (err: ERRO) => void): boolean;
     stopPreview(localStream: MediaStream): boolean;
-    setPublishStateStart(streamid: string, localStream: MediaStream, playOption: PlayOption): boolean;
+    setPublishStateStart(streamid: string, localStream: MediaStream, publishOption: PublishOption): boolean;
     getTotalStreamId(streamid: string): string;
     startPublishingStream(streamid: string, serverUrls: string[], preferPublishSourceType?: number): boolean;
     updateWaitingList(signalInfo: SignalInfo, isPublish: boolean, streamId: string, success: Function, error: Function): void;
@@ -73,6 +73,6 @@ export declare class ZegoStreamCenterWeb extends ZegoStreamCenter {
         height?: number;
         bitRate?: number;
         frameRate?: number;
-    } | MediaStreamConstraints): ScreenConfig;
+    } | MediaStreamConstraints | boolean): ScreenConfig;
     createScreenPreviewer(stream: MediaStream, screenConfig?: ScreenConfig): ZegoPreview;
 }

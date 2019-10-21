@@ -292,17 +292,18 @@ Page({
                 token,
             });
             this.data.component = this.selectComponent("#liveRoom");
-            this.data.component.config({
-                appid: appID, // 必填，应用id，由即构提供
-                idName: this.data.idName, // 必填，用户自定义id
-                nickName: this.data.idName, // 必填，用户自定义昵称
-                remoteLogLevel: 2, // 日志上传级别，建议取值不小于 logLevel
-                logLevel: 0, // 日志级别，debug: 0, info: 1, warn: 2, error: 3, report: 99, disable: 100（数字越大，日志越少）
-                server: wsServerURL,//,"wss://wssliveroom-demo.zego.im/ws", // 必填，服务器地址，由即构提供
-                logUrl: "https://wsslogger-demo.zego.im/httplog", // 选填，log 服务器地址，由即构提供
-                audienceCreateRoom: false, // 观众不允许创建房间
-                testEnvironment:!!testEnvironment
-            });
+            // this.data.component.config({
+            //     appid: appID, // 必填，应用id，由即构提供
+            //     idName: this.data.idName, // 必填，用户自定义id
+            //     nickName: this.data.idName, // 必填，用户自定义昵称
+            //     remoteLogLevel: 2, // 日志上传级别，建议取值不小于 logLevel
+            //     logLevel: 0, // 日志级别，debug: 0, info: 1, warn: 2, error: 3, report: 99, disable: 100（数字越大，日志越少）
+            //     server: wsServerURL,//,"wss://wssliveroom-demo.zego.im/ws", // 必填，服务器地址，由即构提供
+            //     logUrl: "https://wsslogger-demo.zego.im/httplog", // 选填，log 服务器地址，由即构提供
+            //     audienceCreateRoom: false, // 观众不允许创建房间
+            //     testEnvironment:!!testEnvironment
+            // });
+            this.data.component.init(appID, wsServerURL, this.data.idName);
             this.data.component.start(this.data.token);
         });
     },

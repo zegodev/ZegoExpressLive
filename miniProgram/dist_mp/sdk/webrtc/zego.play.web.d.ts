@@ -44,6 +44,7 @@ export declare class ZegoPlayWeb {
     answerSeq: number;
     audioOputput: any;
     getRomoteStreamSuc: any;
+    remoteStream: MediaStream | null;
     peerConnection: RTCPeerConnection | any;
     playOption: PlayOption | {};
     closeSessionSignal: boolean;

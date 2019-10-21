@@ -9,8 +9,8 @@ let playingList = [];
  * **/
 let customFunction = {
     listenCallBack() {
-        zego.onStreamUrlUpdate = (streamId, url, type) => {
-            this.onStreamUrlUpdate(streamId, url, type);
+        zego.onStreamUrlUpdate = (stream_id, url, type) => {
+            this.onStreamUrlUpdate(stream_id, url, type);
         };
         zego.onStreamUpdated = (type, streamList) => {
             this.onStreamUpdated(type, streamList);
@@ -19,19 +19,19 @@ let customFunction = {
             console.log('onStreamExtraInfoUpdated', streamList)
         }
 
-        zego.onPublishStateUpdate = (type, streamId, error) => {
-            console.log('onPublishStateUpdate', type, streamId, error);
+        zego.onPublishStateUpdate = (type, stream_id, error) => {
+            console.log('onPublishStateUpdate', type, stream_id, error);
             this.triggerEvent('RoomEvent', {
                 tag: 'onPublishStateUpdate',
                 code: 0,
-                detail: {type, streamId, error}
+                detail: {type, stream_id, error}
             });
         };
-        zego.onPublishQualityUpdate = (streamId, streamQuality) => {
+        zego.onPublishQualityUpdate = (stream_id, streamQuality) => {
             this.triggerEvent('RoomEvent', {
                 tag: 'onPublishQualityUpdate',
                 code: 0,
-                detail: {streamId, streamQuality}
+                detail: {stream_id, streamQuality}
             });
         };
         zego.onDisconnect = (error) => {
@@ -39,19 +39,19 @@ let customFunction = {
             this.data.isConnect = false;
         };
 
-        zego.onPlayStateUpdate = (type, streamId, error) => {
-            console.log('onPlayStateUpdate', type, streamId, error);
+        zego.onPlayStateUpdate = (type, stream_id, error) => {
+            console.log('onPlayStateUpdate', type, stream_id, error);
             this.triggerEvent('RoomEvent', {
                 tag: 'onPlayStateUpdate',
                 code: 0,
-                detail: {type, streamId, error}
+                detail: {type, stream_id, error}
             });
         };
-        zego.onPlayQualityUpdate = (streamId, streamQuality) => {
+        zego.onPlayQualityUpdate = (stream_id, streamQuality) => {
             this.triggerEvent('RoomEvent', {
                 tag: 'onPlayQualityUpdate',
                 code: 0,
-                detail: {streamId, streamQuality}
+                detail: {stream_id, streamQuality}
             });
         };
 
@@ -183,13 +183,17 @@ let _data_propoerty = {
 
 //对外开放的接口
 let liveRoomHandler = {
-    config(Config) {
-        zego = new zegoSdk.ZegoClient();
-        zego.config(Config);
+    // config(Config) {
+    //     zego = new zegoSdk.ZegoClient();
+    //     zego.config(Config);
+    //     zego.setUserStateUpdate(true);
+    //     this.setData({
+    //         userName: Config.nickName || Config.idName
+    //     })
+    // },
+    init(appId, server, userId) {
+        zego = new zegoSdk.ZegoClient(appId, server, userId);
         zego.setUserStateUpdate(true);
-        this.setData({
-            userName: Config.nickName || Config.idName
-        })
     },
     start(zegotoken, authorToken) {
 
@@ -231,14 +235,18 @@ let liveRoomHandler = {
                 }
             };
 
-            if (authorToken) {
-                zego.loginWithAuthor(this.data.roomID, this.data.isCaster ? 1 : 2,
-                    zegotoken, authorToken, loginSucCallback, loginFailCallback);
-            } else {
-                zego.login(this.data.roomID, this.data.isCaster ? 1 : 2, zegotoken, loginSucCallback, loginFailCallback)
-            }
+            // if (authorToken) {
+            //     zego.loginWithAuthor(this.data.roomID, this.data.isCaster ? 1 : 2,
+            //         zegotoken, authorToken, loginSucCallback, loginFailCallback);
+            // } else {
+            //     zego.login(this.data.roomID, this.data.isCaster ? 1 : 2, zegotoken, loginSucCallback, loginFailCallback)
+            // }
 
-
+            zego.login(this.data.roomID, zegotoken).then(streamList => {
+                loginSucCallback(streamList);
+            }, error => {
+                loginFailCallback(error);
+            })
         }
     },
     resume(token) {
@@ -247,7 +255,7 @@ let liveRoomHandler = {
     },
     stop() {
         playingList.forEach(item => {
-            zego.stopPlayingStream(item.stream_id);
+            zego.stopPlay(item.stream_id);
         });
         playingList = [];
 
@@ -468,6 +476,7 @@ let _liveRoomHandler = {
         this.setData({
             isCaster: this.data.role !== 'audience',
         });
+        console.log('isCaster', this.data.isCaster);
         this.listenCallBack();
         return true;
     },
@@ -483,7 +492,10 @@ let _liveRoomHandler = {
         });
         streamList.forEach(stream => {
             if (!playingList.some(playItem => playItem.stream_id === stream.stream_id)) {
-                zego.startPlayingStream(stream.stream_id);
+                // zego.startPlayingStream(stream.stream_id);
+                zego.getPublishUrls(stream.streamId).then(({streamId, url}) => {
+                    this.onStreamUrlUpdate(streamId, url, 0);
+                });
                 playingList.push(stream);
             }
         });
@@ -561,14 +573,14 @@ let sdkCallBackHandler = {
             let founded = false, isHost = false;
 
             const _streams = this.data.streamList.map(item => {
-                if (item.stream_id === streamId) {
+                if (item.streamId === streamId) {
                     item.url = url;
                     item.isMixStream = false;
-                    item.userID = item.anchor_id_name;
+                    item.userID = item.userId;
                     item.minCache = 1;
                     item.maxCache = 3;
                     item.objectFit = 'contain';
-                    item.userName = item.anchor_nick_name || item.anchor_id_name;
+                    item.userName = item.userName;
                     item.playingState = 'initial';
                     founded = true;
                 }
@@ -578,7 +590,7 @@ let sdkCallBackHandler = {
                 }
                 return item;
             });
-            if (streamId == this.data.mainPusherInfo.stream_id) {
+            if (streamId == this.data.mainPusherInfo.streamId) {
                 isHost = true;
             }
 
@@ -596,13 +608,13 @@ let sdkCallBackHandler = {
 
 
             //混流地址--》作为观众小视频播放
-            if (!founded &&this.data.mainPusherInfo.stream_id !== streamId) {
+            if (!founded &&this.data.mainPusherInfo.stream_id !== stream_id) {
                 streamList.push({
                     url,
                     isMixStream: true,
                     minCache: 1,
                     maxCache: 3,
-                    stream_id: streamId,
+                    stream_id: stream_id,
                     objectFit: 'contain',
                     playingState: 'initial'
                 });
@@ -621,7 +633,7 @@ let sdkCallBackHandler = {
                             }
                         }
                     }, function () {
-                        const live = wx.createLivePlayerContext(streamId, this);
+                        const live = wx.createLivePlayerContext(stream_id, this);
                         live.play();
 
                         //改变推流mode 停止再次播放
@@ -640,7 +652,7 @@ let sdkCallBackHandler = {
                     this.setData({
                         streamList: streamList,
                     }, function () {
-                        const live = wx.createLivePlayerContext(streamId, this);
+                        const live = wx.createLivePlayerContext(stream_id, this);
                         live.play();
                     });
                 }
@@ -652,7 +664,7 @@ let sdkCallBackHandler = {
                         ...this.data.mainPusherInfo,
                         ...{
                             url: url,
-                            stream_id: streamId,
+                            stream_id: stream_id,
                             mode: (streamList.length > 0 || this.data.linkPusherInfo.url) ? 'RTC' : 'live',
                             minCache: 1,
                             maxCache: 3,
@@ -662,7 +674,7 @@ let sdkCallBackHandler = {
                         }
                     },
                 }, function () {
-                    this.data.playerContext = wx.createLivePlayerContext(streamId, this);
+                    this.data.playerContext = wx.createLivePlayerContext(stream_id, this);
                     this.data.playerContext.play();
                 });
             }
@@ -676,7 +688,7 @@ let sdkCallBackHandler = {
                     mainPusherInfo: {
                         ...this.data.mainPusherInfo,
                         ...{
-                            stream_id: streamId,
+                            stream_id: stream_id,
                             url: url,
                             mode: 'HD',
                             minBitrate: 600,
@@ -685,7 +697,7 @@ let sdkCallBackHandler = {
                         }
                     },
                 }, function () {
-                    this.data.pusherContext = wx.createLivePusherContext(streamId, this);
+                    this.data.pusherContext = wx.createLivePusherContext(stream_id, this);
                     this.data.pusherContext.start();
                 });
             } else {
@@ -693,7 +705,7 @@ let sdkCallBackHandler = {
                     linkPusherInfo: {
                         ...this.data.linkPusherInfo,
                         ...{
-                            stream_id: streamId,
+                            stream_id: stream_id,
                             url: url,
                             mode: 'RTC',
                             minBitrate: 150,
@@ -701,7 +713,7 @@ let sdkCallBackHandler = {
                         }
                     },
                 }, function () {
-                    this.data.pusherContext = wx.createLivePusherContext(streamId, this);
+                    this.data.pusherContext = wx.createLivePusherContext(stream_id, this);
                     this.data.pusherContext.start();
                 });
             }
@@ -719,7 +731,7 @@ let sdkCallBackHandler = {
             this.data.streamList.forEach((item) => {
                 if (streamList.some(playItem => playItem.stream_id === item.stream_id)) {
 
-                    zego.stopPlayingStream(item.stream_id);
+                    zego.stopPlay(item.stream_id);
 
                     _streams = _streams.filter(_sm => _sm.stream_id !== item.stream_id);
                     playingList = playingList.filter(playing => playing.stream_id !== item.stream_id);
@@ -734,7 +746,7 @@ let sdkCallBackHandler = {
             if (streamList.some(playItem => playItem.stream_id === this.data.mainPusherInfo.stream_id)) {
 
                 playingList = playingList.filter(playing => playing.stream_id !== this.data.mainPusherInfo.stream_id);
-                zego.stopPlayingStream(this.data.mainPusherInfo.stream_id);
+                zego.stopPlay(this.data.mainPusherInfo.stream_id);
 
                 //通知使用组件页面
                 this.triggerEvent('RoomEvent', {

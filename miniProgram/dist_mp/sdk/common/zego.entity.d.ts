@@ -222,6 +222,8 @@ export interface StreamQuality {
     videoFramesDropped?: number;
     videoPacketsLostRate?: number;
     videoQuality?: number;
+    videoWidth?: number;
+    videoHeight?: number;
     audioBitrate: number;
     audioJitter?: number;
     audioLevel?: number;
@@ -246,11 +248,11 @@ export interface StreamInfo {
     userId: string;
     userName: string;
     extraInfo: string;
-    urlsFlv: string;
-    urlsRtmp: string;
-    urlsHls: string;
-    urlsHttpsFlv: string;
-    urlsHttpsHls: string;
+    urlsFlv: string[] | null;
+    urlsRtmp: string[] | null;
+    urlsHls: string[] | null;
+    urlsHttpsFlv: string[] | null;
+    urlsHttpsHls: string[] | null;
 }
 export interface ERRO {
     code: string | number;
@@ -340,12 +342,9 @@ export interface Constraints {
         height?: number;
         bitRate?: number;
         frameRate?: number;
-    } | MediaStreamConstraints;
+    } | MediaStreamConstraints | boolean;
     external?: {
         source: HTMLElement | MediaStream;
-        height?: number;
-        frameRate?: number;
-        width?: number;
         bitRate?: number;
     } | MediaStreamConstraints;
 }
@@ -418,6 +417,8 @@ export interface QualityStats {
         videoTransferFPS?: number;
         frameHeight?: number;
         frameWidth?: number;
+        videoHeight?: number;
+        videoWidth?: number;
     };
     audio: {
         audioBitrate: number;
@@ -447,8 +448,8 @@ export interface mixStreamConfig {
         };
     }>;
     outputList: Array<{
-        streamId: string;
-        outputUrl: string;
+        streamId?: string;
+        outputUrl?: string;
         outputBitrate?: number;
         outputFps?: number;
         outputWidth?: number;
@@ -473,6 +474,10 @@ export interface mixStreamAdvance {
             right: number;
         };
     };
+    extraParams: Array<{
+        key: string;
+        value: string;
+    }>;
 }
 export declare enum ENUM_PLAY_SOURCE_TYPE {
     auto = 0,
@@ -484,18 +489,17 @@ export declare enum ENUM_DISPATCH_TYPE {
     customUrl = 2
 }
 export declare type PublishOption = {
-    publishParams?: string;
+    streamParams?: string;
     extraInfo?: string;
+    audioBitRate?: number;
+    cdnUrl?: string;
+    videoDecodeType?: ZegoVideoDecodeType;
 };
 export declare type PlayOption = {
-    video: boolean;
-    audio: boolean;
-    extraInfo?: string;
-    authToken?: string;
+    video?: boolean;
+    audio?: boolean;
     streamParams?: string;
-    cdnUrl?: string;
-    audioBitRate?: number;
-    videoCodec?: ZegoVideoDecodeType;
+    videoDecodeType?: ZegoVideoDecodeType;
 };
 export declare enum E_CLIENT_TYPE {
     ClientType_None = 0,

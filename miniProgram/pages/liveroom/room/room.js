@@ -114,8 +114,9 @@ Page({
     //     audienceCreateRoom: true,     // false观众不允许创建房间
     //     testEnvironment:!!testEnvironment
     // });
-    this.bindCallBack();  //监听zego-sdk回调
+    // this.bindCallBack();  //监听zego-sdk回调
 
+    this.onBindCallback(); // 监听sdk on 回调
     console.log('>>>[liveroom-room] publishStreamID is: ' + this.data.publishStreamID);
 
     // 进入房间，自动登录
@@ -393,6 +394,230 @@ Page({
     };
   },
 
+  onBindCallback() {
+    let self = this;
+
+    // 推流后，服务器主动推过来的，流状态更新
+    // type: { start: 0, stop: 1 }，主动停止推流没有回调，其他情况均回调
+    // zg.onPublishStateUpdate = function (type, streamid, error) {
+    zg.on('publishStateChange', ({type, streamId, error}) => {
+      console.log('>>>[liveroom-room] zg publishStateChange, streamId: ' + streamId + ', type: ' + (type === 0 ? 'start' : 'stop') + ', error: ' + error);
+
+      self.setData({
+        isPublishing: type === 0 ? true : false,
+        beginToPublish: false,
+      });
+      // 推流失败
+      if (type == 1) {
+        wx.showModal({
+          title: '提示',
+          content: '推流断开，请退出房间后重试',
+          showCancel: false,
+          success(res) {
+            // 用户点击确定，或点击安卓蒙层关闭
+            if (res.confirm || !res.cancel) {
+              // 强制用户退出
+              wx.navigateBack();
+              zg.logout();
+            }
+          }
+        });
+      } else if (type === 0) {
+        // 混流
+        // self.mixStream();
+      }
+    });
+
+    // 服务端主动推过来的 流的播放状态, 视频播放状态通知
+    // type: { start:0, stop:1};
+    zg.on('pullStateChange', ({type, streamId, error}) => {
+      console.log(">>>[liveroom-room] zg pullStateChange, " + type + ' ' + (type === 0 ? 'start ' : 'stop ') + streamId);
+
+      if (type === 1) {
+        // 流播放失败, 停止拉流
+        for (let i = 0; i < self.data.playStreamList.length; i++) {
+          if (self.data.playStreamList[i]['streamID'] === streamId) {
+            self.data.playStreamList[i]['playContext'] && self.data.playStreamList[i]['playContext'].stop();
+            self.data.playStreamList[i]['playingState'] = 'failed';
+            break;
+          }
+        }
+      } else if (type === 0) {
+        // 流播放成功, 更新状态
+        for (let i = 0; i < self.data.playStreamList.length; i++) {
+          if (self.data.playStreamList[i]['streamID'] === streamId) {
+            self.data.playStreamList[i]['playingState'] = 'succeeded';
+          }
+        }
+      }
+
+      self.setData({
+        playStreamList: self.data.playStreamList,
+      });
+    });
+
+    // 服务端主动推过来的 流的创建/删除事件；updatedType: { added: 0, deleted: 1 }；streamList：增量流列表
+    zg.on('remoteStreamUpdated', (type, streamList)=>  {
+      console.log(">>>[liveroom-room] zg remoteStreamUpdated, updatedType: " + (type === 0 ? 'added' : 'deleted') + ', streamList: ');
+      console.log(streamList);
+
+      if (type === 1) {
+        // 流删除通知触发事件：有推流成员正常退出房间；有推流成员停止推流；90s 超时。播放失败不会导致流删除
+        self.stopPlayingStreamList(streamList);
+      } else {
+        // 有成员正常推流成功，流增加
+        self.startPlayingStreamList(streamList);
+      }
+    });
+
+    // 服务端主动推过来的 流信息中的 ExtraInfo更新事件（暂时不用实现）
+    zg.on('streamExtraInfoUpdated', (streamList) => {
+      console.log(">>>[liveroom-room] zg streamExtraInfoUpdated IU ", streamList);
+    });
+
+    zg.on('userStateUpdate', (roomId, userList) => {
+      console.log('user ', this.data.userID);
+      console.log('>>>[liveroom-room] onUserStateUpdate, roomID: ' + roomId + ', userList: ',this.data.anchorID );
+      console.log(userList);
+
+      for (let i = 0; i < userList.length; i++) {
+        if (userList.length === 1 && userList[0].idName === this.data.anchorID && userList[0].action === 2) {
+          // 主播退出房间
+          wx.showModal({
+            title: '提示',
+            content: '主播已离开，请前往其他房间观看',
+            showCancel: false,
+            success(res) {
+              // 用户点击确定，或点击安卓蒙层关闭
+              if (res.confirm || !res.cancel) {
+                // 强制用户退出
+                wx.navigateBack();
+                zg.logout();
+              }
+            }
+          });
+          //break;
+        }
+      }
+    });
+
+    zg.on('totalUserList', (roomId, userList ) => {
+        console.log('totalUserList', roomId);
+        console.log('totalUserList', userList);
+    });
+
+    //
+    zg.on('updateOnlineCount', (roomId, userCount) => {
+      console.log('>>>[liveroom-room] updateOnlineCount, roomId: ' + roomId + ', userCount: ' + userCount);
+    });
+
+    // 登录成功后，服务器主动推过来的，主播信息
+    zg.on('getAnchorInfo', (anchorId, anchorName) => {
+      console.log('>>>[liveroom-room] getAnchorInfo, anchorId: ' + anchorId + ', anchorName: ' + anchorName);
+
+      self.setData({
+        anchorID: anchorId,
+        anchorName: anchorName,
+      });
+    });
+
+    zg.on('roomStateUpdate', (state, reason, roomId) => {
+      console.log('>>>[liveroom-room] roomStateUpdate, state: ' + state + ', reason: ' + reason);
+
+    })
+
+    // 接收服务端主推送的自定义信令
+    zg.on('recvCustomCommand', (from_userid, from_idName, custom_content) => {
+      console.log(">>>[liveroom-room] zg recvCustomCommand" + "from_userid: " + from_userid + "from_idName: " + from_idName + "content: ");
+      console.log(custom_content);
+    });
+
+    // 接收房间IM消息
+    zg.on('recvRoomMsg', (chat_data, server_msg_id, ret_msg_id) => {
+      console.log(">>>[liveroom-room] zg recvRoomMsg, data: ", chat_data);
+
+      // 收到其他成员的回到前台通知
+      let content = chat_data[0].msg_content;
+      let category = chat_data[0].msg_category;
+
+      if (category === 2) {
+        // 系统消息
+        let data = content.split(".");
+        let streamID = data[1];
+        if (data[0] === "onShow") {
+          for (let i = 0; i < self.data.playStreamList.length; i++) {
+            if (self.data.playStreamList[i]["streamID"] === streamID && self.data.playStreamList[i]["playingState"] !== 'succeeded') {
+              self.data.playStreamList[i]["playContext"] && self.data.playStreamList[i]["playContext"].stop();
+              self.data.playStreamList[i]["playContext"] && self.data.playStreamList[i]["playContext"].play();
+            }
+          }
+        }
+      } else {
+        // 评论消息
+        let name = chat_data[0].id_name;
+        let time = chat_data[0].send_time;
+
+        let message = {};
+        message.name = name;
+        message.time = format(time);
+        message.content = content;
+        message.id = name + time;
+
+        self.data.messageList.push(message);
+
+        self.setData({
+          messageList: self.data.messageList,
+          scrollToView: message.id,
+        });
+      }
+
+    });
+
+    // 收到连麦请求
+    zg.on('recvJoinLiveRequest', (requestId, fromUserId, fromUsername, roomId) => {
+      console.log('>>>[liveroom-room] recvJoinLiveRequest, roomId: ' + roomId + 'requestUserId: ' + fromUserId + ', requestUsername: ' + fromUsername);
+
+      self.data.requestJoinLiveList.push(requestId);
+
+      let content = '观众 ' + fromUsername + ' 请求连麦，是否允许？';
+      wx.showModal({
+        title: '提示',
+        content: content,
+        success(res) {
+          if (res.confirm) {
+            console.log('>>>[liveroom-room] recvJoinLiveRequest accept join live');
+            // self.switchPusherOrPlayerMode('pusher', 'RTC');
+
+            // 已达房间上限，主播依然同意未处理的连麦，强制不处理
+            if (self.data.reachStreamLimit) {
+              wx.showToast({
+                title: '房间内连麦人数已达上限，不建立新的连麦',
+                icon: 'none',
+                duration: 2000
+              });
+              zg.respondJoinLive(requestId, false); // true：同意；false：拒绝
+            } else {
+              zg.respondJoinLive(requestId, true); // true：同意；false：拒绝
+            }
+
+
+            self.handleMultiJoinLive(self.data.requestJoinLiveList, requestId, self);
+          } else {
+            console.log('>>>[liveroom-room] recvJoinLiveRequest refuse join live');
+            zg.respondJoinLive(requestId, false); // true：同意；false：拒绝
+
+            self.handleMultiJoinLive(self.data.requestJoinLiveList, requestId, self);
+          }
+        }
+      });
+    });
+
+    // 收到停止连麦请求
+    zg.on('recvEndJoinLiveCommand', (requestId, fromUserId, fromUsername, roomId) => {
+      console.log('>>>[liveroom-room] onRecvEndJoinLiveCommand, roomId: ' + roomId + 'requestUserId: ' + fromUserId + ', requestUsername: ' + fromUsername);
+    });
+  },
+
   setPlayUrl(streamid, url) {
     console.log('>>>[liveroom-room] setPlayUrl: ', url);
     let self = this;
@@ -432,7 +657,8 @@ Page({
       streamInfo['playingState'] = 'initial';
       self.data.playStreamList.push(streamInfo);
     }
-
+    
+    // 更新播放流
     self.setData({
       playStreamList: self.data.playStreamList,
     }, function () {
@@ -507,7 +733,11 @@ Page({
       if (self.data.loginType === 'anchor') {
         console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamID: ' + self.data.publishStreamID);
         zg.setPreferPublishSourceType(self.data.preferPublishSourceType);
-        zg.startPublishingStream(self.data.publishStreamID, '', JSON.stringify(extraInfo));
+        // zg.startPublishingStream(self.data.publishStreamID, '', JSON.stringify(extraInfo));
+        zg.getPusherUrl(self.data.publishStreamID).then(({streamId, url}) => {
+          console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
+          self.setPushUrl(url);
+        })
       } else {
         if (streamList.length === 0) {
           let title = '主播已经退出！';
@@ -556,10 +786,14 @@ Page({
 
     // 获取每个 streamID 对应的拉流 url
     for (let i = 0; i < streamList.length; i++) {
-      let streamID = streamList[i].stream_id;
-      let anchorID = streamList[i].anchor_id_name;  // 推这条流的用户id
-      console.log('>>>[liveroom-room] startPlayingStream, playStreamID: ' + streamID + ', pushed by : ' + anchorID);
-      zg.startPlayingStream(streamID);
+      let streamID = streamList[i].streamId;
+      // let anchorID = streamList[i].anchor_id_name;  // 推这条流的用户id
+      console.log('>>>[liveroom-room] startPlayingStream, playStreamID: ' + streamID);
+      // 获取拉流地址接口
+      zg.getPlayerUrl(streamID).then(({streamId, url}) => {
+        console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
+        self.setPlayUrl(streamId, url);
+      })
     }
   },
 
@@ -573,10 +807,10 @@ Page({
 
     let playStreamList = self.data.playStreamList;
     for (let i = 0; i < streamList.length; i++) {
-      let streamID = streamList[i].stream_id;
+      let streamID = streamList[i].streamId;
 
       console.log('>>>[liveroom-room] stopPlayingStream, playStreamID: ' + streamID);
-      zg.stopPlayingStream(streamID);
+      zg.stopPlayer(streamID);
 
       // 删除播放流列表中，删除的流
       for (let j = 0; j < playStreamList.length; j++) {
@@ -661,6 +895,8 @@ Page({
     if (e.detail.code === 2002 || e.detail.code === 2004) {
       // 透传拉流事件给 SDK，type 0 拉流
       zg.updatePlayerState(e.currentTarget.id, e, 0);
+      // 获取拉流质量回调
+      
       this.updatePlayingStateOnly(e, 'succeeded');
     } else if (e.detail.code === -2301) {
       //  this.updatePlayingStateOnly(e, 'failed');
@@ -709,6 +945,9 @@ Page({
   onPlayNetStateChange(e) {
     //透传网络状态事件给 SDK，type 0 拉流
     zg.updatePlayerNetStatus(e.currentTarget.id, e, 0);
+    zg.getStats(({streamId, type, video: {videoBitrate, videoFPS}, audio: {audioBitrate}}) => {
+      console.log('>>>[liveroom-room] onPlayNetStateChange streamId is ', streamId, ' type is ', type === 1 ? 'push' : 'play', ' videoBitrate: ', videoBitrate, ' videoFPS: ', videoFPS, ' audioBitrate: ', audioBitrate)
+    })
   },
 
   // live-pusher 绑定网络状态事件
@@ -716,6 +955,9 @@ Page({
     //透传网络状态事件给 SDK，type 1 推流
     console.log('quality', e);
     zg.updatePlayerNetStatus(this.data.publishStreamID, e, 1);
+    zg.getStats(({streamId, type, video: {videoBitrate, videoFPS}, audio: {audioBitrate}}) => {
+      console.log('>>>[liveroom-room] onPushNetStateChange streamId is ', streamId, ' type is ', type, type === 1 ? 'push' : 'play', ' videoBitrate: ', videoBitrate, ' videoFPS: ', videoFPS, ' audioBitrate: ', audioBitrate)
+    })
   },
 
   // 主播邀请连麦
@@ -1182,7 +1424,7 @@ Page({
     for (let i = 0; i < streamList.length; i++) {
       let streamID = streamList[i]['streamID'];
       console.log('>>>[liveroom-room] onUnload stop play stream, streamid: ' + streamID);
-      zg.stopPlayingStream(streamID);
+      zg.stopPlayer(streamID);
 
       streamList[i]['playContext'] && streamList[i]['playContext'].stop();
     }
@@ -1194,7 +1436,7 @@ Page({
     // 停止推流
     if (this.data.isPublishing) {
       console.log('>>>[liveroom-room] stop publish stream, streamid: ' + this.data.publishStreamID);
-      zg.stopPublishingStream(this.data.publishStreamID);
+      zg.stopPusher(this.data.publishStreamID);
       this.setData({
         publishStreamID: "",
         isPublishing: false,

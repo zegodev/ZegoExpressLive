@@ -1,5 +1,5 @@
 import { ZegoDataReport } from '../common/zego.datareport';
-import { VideoInfo, PlayOption, AudioMixConfig, ERRO } from '../common/zego.entity';
+import { VideoInfo, AudioMixConfig, ERRO, PublishOption } from '../common/zego.entity';
 import { ZegoSignal } from '../common/zego.signal';
 import { Logger } from '../common/zego.logger';
 import { AudioMixUtil } from '../util/AudioMixUtil';
@@ -52,7 +52,7 @@ export declare class ZegoPublish {
     private clearTryPublishTimer;
     private clearPublishQualityTimer;
     private shouldSendCloseSession;
-    startPublish(streamId: string, localStream: MediaStream, videoInfo: VideoInfo, playOption?: PlayOption): void;
+    startPublish(streamId: string, localStream: MediaStream, videoInfo: VideoInfo, publishOption?: PublishOption): void;
     onCreatePublishSessionSuccess(data: {
         session_id?: string | number;
         result?: string | number;

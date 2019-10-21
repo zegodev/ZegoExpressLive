@@ -4,7 +4,7 @@ export declare class ZegoPreview {
     private log;
     logger: Logger;
     localStream: MediaStream | null;
-    videoInfo: {};
+    videoInfo: any;
     mediaStreamConfig: MediaStreamConstraints;
     previewSuc: boolean;
     constructor(log: Logger);

@@ -16,12 +16,12 @@ Page({
                 title: "视频直播",
                 navigateTo: "../liveroom/roomlist/roomlist"
             },
-            // {
-            //     icon: "../../resource/interactionLive.png",
-            //     subtitle: '<live-room>',
-            //     title: "视频直播",
-            //     navigateTo: "../usecomponents/live-room/roomlist/roomlist"
-            // },
+            {
+                icon: "../../resource/interactionLive.png",
+                subtitle: '<live-room>',
+                title: "视频直播",
+                navigateTo: "../usecomponents/live-room/roomlist/roomlist"
+            },
             // {
             //     icon: "../../resource/videotlak.png",
             //     subtitle: '<rtc-room>',
@@ -101,7 +101,7 @@ Page({
 
     authCheck() {
         let self = this;
-        ZegoClient.isSupportLive(result => {
+        ZegoClient.isSupportLive().then(result => {
             if (result.code === 10001) {
                 console.log('result ', result.code)
                 wx.showModal({

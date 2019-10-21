@@ -39,12 +39,12 @@ export declare abstract class BaseCenter extends Common {
     respondJoinLive(requestId: string, respondResult: boolean, success?: (seq: number) => void, error?: (err: ERRO, seq: number) => void): boolean;
     startMixStream(mixStreamConfig: mixStreamConfig): Promise<Array<{
         streamId?: string;
-        rtmpUrl: Array<string> | string | null;
-        hlsUrl: Array<string> | string | null;
-        flvUrl: Array<string> | string | null;
+        rtmpUrl: string;
+        hlsUrl: string;
+        flvUrl: string;
     }>>;
     stopMixStream(taskId: string): Promise<void>;
-    publishTarget(cdnPushConfig: CdnPushConfig, success: Function, error: Function): void;
+    publishTarget(cdnPushConfig: CdnPushConfig): Promise<void>;
     updateStreamExtraInfo(streamid: string, extraInfo: string): boolean;
     on(listener: string, callBack: Function): void;
     actionListener(listener: string, ...args: Array<any>): void;

@@ -1,4 +1,4 @@
-import { PlayOption, Constraints, QualityStats, ERRO, UsabilityDedection } from '../common/zego.entity';
+import { PlayOption, Constraints, QualityStats, ERRO, UsabilityDedection, PublishOption } from '../common/zego.entity';
 import { ZegoStreamCenterWeb } from './zego.streamCenter.web';
 import { AudioMixUtil } from '../util/AudioMixUtil';
 import { BaseCenter } from '../common/clientBase/index';
@@ -22,7 +22,7 @@ export declare class ZegoClient extends BaseCenter {
     stopRemoteStream(streamId: string): boolean;
     createLocalStream(option?: Constraints): Promise<MediaStream>;
     destroyLocalStream(localStream: MediaStream): boolean;
-    publishLocalStream(streamId: string, localStream: MediaStream, playOption?: PlayOption | {}): boolean;
+    publishLocalStream(streamId: string, localStream: MediaStream, publishOption?: PublishOption): boolean;
     stopPublishLocalStream(streamId: string): boolean;
     private preloadEffect;
     private playEffect;
