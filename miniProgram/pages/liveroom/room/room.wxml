@@ -44,6 +44,7 @@
                 wx:if="{{item.playUrl}}"
                 id="{{item.streamID}}"
                 mode="{{playConfig.mode}}"
+                muted="{{false}}"
                 object-fit="contain"
                 min-cache="0.1"
                 max-cache="0.3"
@@ -127,6 +128,10 @@
         <view class='img-box' bindtap="showLog">
             <image src='../../../resource/{{pushConfig.showLog? "log" : "noLog"}}.png'></image>
             <text>日志</text>
+        </view>
+        <view class='img-box' bindtap="mixStream">
+            <image src='../../../resource/mixStream.png'></image>
+            <text>混流</text>
         </view>
     </view>
     <view wx:if="{{!isMessageHide}}">
