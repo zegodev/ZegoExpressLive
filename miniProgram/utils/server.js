@@ -28,34 +28,15 @@ function _request({url, data = {}, testMode = true}) {
 }
 
 function getLoginToken(userID, appid) {
-    let { tokenURL,cgi_token, appSign, tokenURL2 } = getApp().globalData;
-    if (appSign) {
-        console.log('>>> get token first type')
-        const now = new Date().getTime();
-        const time = Math.floor(now / 1000 + 30 * 60);
-        return _request({
-            url: tokenURL2,
-            data: {
-                app_id: appid,
-                app_secret: appSign,
-                id_name: userID,
-                nonce: now,
-                expired: time
-            },
-            testMode: false
-        })
-    } else {
-        console.log('>>> get token second type')
-        return _request({
-            url: tokenURL,
-            data: {
-                app_id: appid,
-                id_name: userID,
-                cgi_token
-            },
-            testMode: true
-        })
-    }
+    let { tokenURL } = getApp().globalData;
+    return _request({
+        url: tokenURL,
+        data: {
+            app_id: appid,
+            id_name: userID,
+        },
+        testMode: true
+    })
 }
 
 module.exports = {

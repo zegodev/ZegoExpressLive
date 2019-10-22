@@ -14,13 +14,11 @@ ZegoLive 是一个即构sdk功能示例demo，开发人员可以参考该demo，
 4. 部署上线需要申请指定类目，详情请查看[小程序官方文档](https://developers.weixin.qq.com/miniprogram/dev/component/live-player.html)
 
 # 快速运行demo
-让开发者前期能快速体验demo效果，将app.js文件中的appid、appSign、server替换为你从即构申请到的配置信息，通过前端获取token。
+让开发者前期能快速体验demo效果，将app.js文件中的appid、server替换为你从即构申请到的配置信息，通过前端获取token。
 
-appid,appSign,server地址 需要自行修改为自己的配置(请从控制台申请AppID时邮件内容里获取)
+appid,server地址 需要自行修改为自己的配置(请从控制台申请AppID时邮件内容里获取)
 
-请注意：
 
-appSign 为即构分配给项目对应的项目的密钥，切忌不可泄漏！！！
 
 正式开发需要由业务后台实现token的逻辑，小程序端通过业务服务器获取token，详见[即构开发者中心](https://doc.zego.im/CN/387.html#4_2)
 

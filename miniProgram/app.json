@@ -3,10 +3,6 @@
     "pages/main/main",
     "pages/liveroom/roomlist/roomlist",
     "pages/liveroom/room/room",
-    "pages/usecomponents/live-room/roomlist/roomlist",
-    "pages/usecomponents/live-room/room/room",
-    "pages/usecomponents/rtc-room/roomName/roomName",
-    "pages/usecomponents/rtc-room/room/room",
     "pages/tool/customlive/index",
     "pages/tool/live/index",
     "pages/tool/setting/index"

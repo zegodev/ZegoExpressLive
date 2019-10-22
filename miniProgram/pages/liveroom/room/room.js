@@ -18,7 +18,7 @@ Page({
     roomName: "",            // 房间名
     userID: "",             // 当前初始化的用户 ID
     userName: "",           // 当前初始化的用户名
-    appID: "",              // appID，用于初始化 sdk
+    appID: 0,              // appID，用于初始化 sdk
     anchorID: "",           // 主播 ID
     anchorName: "",         // 主播名
     anchorStreamID: "",     // 主播推流的流 ID
@@ -61,6 +61,7 @@ Page({
     scrollToView: "",
     imgTempPath: "",
     tryPlayCount: 0,
+    mixStreamStart: false
   },
 
   /**
@@ -98,10 +99,8 @@ Page({
       appID,
       publishStreamID: 'xcxS' + timestamp,
       MixStreamID: 'xcxMixS' + timestamp,
+      MixTaskId: 'xcxMixT' + timestamp
     });
-    // this.setData({
-    //   MixIdName: 'Mix' + this.data.userID
-    // })
     zg = new ZegoClient(this.data.appID, wsServerURL, this.data.userID);
     // 高级配置
     // zg.config({
@@ -575,16 +574,29 @@ Page({
 
           playStreamList[j]['playContext'] && playStreamList[j]['playContext'].stop();
 
-          let content = '一位观众结束连麦，停止拉流';
-          wx.showToast({
-            title: content,
-            icon: 'none',
-            duration: 2000
-          });
+          // let content = '一位观众结束连麦，停止拉流';
+          // wx.showToast({
+          //   title: content,
+          //   icon: 'none',
+          //   duration: 2000
+          // });
 
           playStreamList.splice(j, 1);
           break;
         }
+      }
+      if (playStreamList.length === 0) {
+        let title = '主播已经退出！';
+        wx.showModal({
+          title: '提示',
+          content: title,
+          showCancel: false,
+          success(res) {
+            if (res.confirm || !res.cancel) {
+              wx.navigateBack();
+            }
+          }
+        });
       }
     }
 
@@ -615,46 +627,59 @@ Page({
     });
   },
 
-  mixStream() {
-    var inputList = [{
-      streamId: this.data.publishStreamID,
-      layout: {
-        top: 0,
-        left: 0,
-        bottom: 480,
-        right: 640,
-      }  
-    }, {
-      streamId: this.data.playStreamList[0].streamID,
-      layout: {
-        top: 480,
-        left: 0,
-        bottom: 960,
-        right: 640
-      }
-    }];
-    var outputList = [{
-      streamId: this.data.MixStreamID,
-      outputBitrate: 800 * 1000,
-      outputFps: 15,
-      outputWidth: 640,
-      outputHeight: 960,
-    }]
-    var mixParam = {
-      taskId: 'xcxMixT' + new Date().getTime(),
-      inputList: inputList,
-      outputList
-      // extraParams: [{ key: 'video_encode', value: 'vp8' }]
-    };
-    console.log('mixParam', mixParam);
-    zg.startMixStream(mixParam).then(mixPlayInfoList => {
-      console.log('mixPlayInfoList: ', mixPlayInfoList);
-      // console.log('mixStreamId: ' + mixStreamId);
-      // console.log('mixStreamInfo: ' + JSON.stringify(mixStreamInfo));
-    }, (err) => {
-      console.log('err: ', err);
-      // console.log('errorInfo: ' + JSON.stringify(errorInfo));
-    });
+  PlayOrStopMixStream() {
+    let self = this
+    if (self.data.mixStreamStart) {
+      zg.stopMixStream(this.data.MixTaskId).then(res => {
+        self.setData({
+          mixStreamStart: false
+        })
+      });
+    } else {
+      const inputList = [{
+        streamId: this.data.publishStreamID,
+        layout: {
+          top: 0,
+          left: 0,
+          bottom: 480,
+          right: 640,
+        }  
+      }, {
+        streamId: this.data.playStreamList[0].streamID,
+        layout: {
+          top: 480,
+          left: 0,
+          bottom: 960,
+          right: 640
+        }
+      }];
+      const outputList = [{
+        streamId: this.data.MixStreamID,
+        outputBitrate: 800 * 1000,
+        outputFps: 15,
+        outputWidth: 640,
+        outputHeight: 960,
+      }]
+      const mixParam = {
+        taskId: this.data.MixTaskId,
+        inputList: inputList,
+        outputList
+        // extraParams: [{ key: 'video_encode', value: 'vp8' }]
+      };
+      console.log('mixParam', mixParam);
+      zg.startMixStream(mixParam).then(mixPlayInfoList => {
+        console.log('mixPlayInfoList: ', mixPlayInfoList);
+        self.setData({
+          mixStreamStart: true
+        })
+        // console.log('mixStreamId: ' + mixStreamId);
+        // console.log('mixStreamInfo: ' + JSON.stringify(mixStreamInfo));
+      }, (err) => {
+        console.log('err: ', err);
+        // console.log('errorInfo: ' + JSON.stringify(errorInfo));
+      });
+    }
+    
   },
   //live-player 绑定拉流事件
   onPlayStateChange(e) {

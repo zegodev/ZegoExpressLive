@@ -1,6 +1,6 @@
 let {sharePage} = require('../../../../utils/util.js');
 const app = getApp();
-let {appSign, roomListURL: requestRoomListUrl, existOwnRoomList} = app.globalData;
+let { roomListURL: requestRoomListUrl, existOwnRoomList, zegoOwn} = app.globalData;
 Page({
 
     /**
@@ -188,7 +188,7 @@ Page({
         //wx.authorize({ scope: "scope.camera" })
         //wx.openSetting();
         console.log('>>>[liveroom-roomList] onLoad');
-        if (appSign && !existOwnRoomList) {
+        if ( !zegoOwn && !existOwnRoomList) {
             this.setData({
                 testMode: false
             })
