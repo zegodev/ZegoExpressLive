@@ -172,7 +172,7 @@ Page({
         });
       } else if (type === 0) {
         // 混流
-        // self.mixStream();
+        // self.transCode();
       }
     });
 
@@ -221,6 +221,14 @@ Page({
     // 服务端主动推过来的 流信息中的 ExtraInfo更新事件（暂时不用实现）
     zg.on('streamExtraInfoUpdated', (streamList) => {
       console.log(">>>[liveroom-room] zg streamExtraInfoUpdated IU ", streamList);
+      for (let i = 0; i < streamList.length; i++) {
+        let content = 'send by: ' + streamList[i].userId + ' ' + streamList[i].extraInfo;
+        wx.showToast({
+          title: content,
+          icon: 'none',
+          duration: 2000
+        });
+      }
     });
 
     zg.on('userStateUpdate', (roomId, userList) => {
@@ -478,18 +486,22 @@ Page({
       // 房间内已经有流，拉流
       self.startPlayingStreamList(streamList);
 
-      const extraInfo = { currentVideoCode: 'H264', MixStreamId: self.data.MixIdName };
+      // const extraInfo = { currentVideoCode: 'H264', mixStreamId: self.data.MixStreamID };
       // 主播登录成功即推流
       if (self.data.loginType === 'anchor') {
         console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamID: ' + self.data.publishStreamID);
         zg.setPreferPublishSourceType(self.data.preferPublishSourceType);
         // zg.startPublishingStream(self.data.publishStreamID, '', JSON.stringify(extraInfo));
+        // zg.getPusherUrl(self.data.publishStreamID, {extraInfo: JSON.stringify(extraInfo)}).then(({streamId, url}) => {
+        //   console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
+        //   self.setPushUrl(url);
+        // })
         zg.getPusherUrl(self.data.publishStreamID).then(({streamId, url}) => {
           console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
           self.setPushUrl(url);
         })
       } else {
-        if (streamList.length === 0) {
+        if (!self.data.pushUrl && streamList.length === 0) {
           let title = '主播已经退出！';
           wx.showModal({
             title: '提示',
@@ -672,6 +684,7 @@ Page({
           //   console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
           //   self.setPlayUrl(streamId, url);
           // })
+          // zg.startPlayingMixStream(mixPlayInfoList[i].streamId);
         }
         self.setData({
           mixStreamStart: true
@@ -685,6 +698,36 @@ Page({
     }
     
   },
+
+  transCode() {
+    const streamList = [{
+            streamId: this.data.publishStreamID,
+            layout: {
+                    top: 0,
+                    left: 0,
+                    bottom: 480,
+                    right: 640,
+            }
+    }];
+    zg.startMixStream ({
+            taskId: this.data.MixTaskId,
+            inputList: streamList,
+            outputList: [{
+                    streamId: this.data.MixStreamID,
+                    outputUrl: '',
+                    outputBitrate: 300 * 1000,
+                    outputFps: 15,
+                    outputWidth: 640,
+                    outputHeight: 480
+            }],
+            advance: {
+                    videoCodec: 'vp8'
+            }
+    }).then(res => {
+      console.log('transCode', res)
+    });
+  },
+
   //live-player 绑定拉流事件
   onPlayStateChange(e) {
     console.log('>>>[liveroom-room] onPlayStateChange, code: ' + e.detail.code + ', message:' + e.detail.message);
@@ -928,7 +971,7 @@ Page({
   },
 
   updateStreamExtra() {
-    zg.updateStreamExtraInfo(this.data.publishStreamID, 'extroInfo: send by ' + this.data.anchorName)
+    zg.updateStreamExtraInfo(this.data.publishStreamID, 'extroInfo: send at ' + new Date())
   },
 
   playOrStopBgm() {
