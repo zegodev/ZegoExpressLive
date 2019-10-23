@@ -626,7 +626,8 @@ Page({
   PlayOrStopMixStream() {
     let self = this
     if (self.data.mixStreamStart) {
-      zg.stopMixStream(this.data.MixTaskId).then(res => {
+      zg.stopMixStream(this.data.MixTaskId).then(() => {
+        self.stopPlayingStreamList([{streamId: this.data.MixStreamID}])
         self.setData({
           mixStreamStart: false
         })
@@ -666,10 +667,11 @@ Page({
       zg.startMixStream(mixParam).then(mixPlayInfoList => {
         console.log('mixPlayInfoList: ', mixPlayInfoList);
         for(let i = 0; i < mixPlayInfoList.length; i++) {
-          // self.setData({
-          //   mixStreamUrl: mixPlayInfoList[i].rtmpUrl
-          // });
           self.setPlayUrl(mixPlayInfoList[i].streamId, mixPlayInfoList[i].rtmpUrl)
+          // zg.getPlayerUrl(mixPlayInfoList[i].streamId).then(({streamId, url}) => {
+          //   console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
+          //   self.setPlayUrl(streamId, url);
+          // })
         }
         self.setData({
           mixStreamStart: true
@@ -897,147 +899,6 @@ Page({
     this.data.pusherVideoContext && this.data.pusherVideoContext.switchCamera();
   },
 
-  // 截图发送
-  snapshot() {
-    var that = this
-    console.log('>>>[liveroom-room] snapshot ', this.data.loginType)
-    const sucCallback = (ret) => {
-      console.log('>>>[liveroom-room] snapshot success')
-      console.log('ret', ret.tempImagePath);
-      wx.showLoading({
-        title: '正在上传...',
-      })
-      const imgPath = 'sdk-doc/mini-snapshot-' + new Date().getTime() + '.jpg'
-      // 上传图片
-      wx.uploadFile({
-        //  服务器上传图片接口地址
-        url: 'https://***',
-        filePath: ret.tempImagePath,
-        name: 'file',
-        header: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        formData: {
-          'path': imgPath,
-          'space': 'DemoSpace'
-        },
-        success(res) {
-          console.log('res', res)
-          const data = JSON.parse(res.data)
-          if (data.code == 200) {
-            wx.hideLoading()
-            wx.showToast({
-              title: '发送成功',
-              duration: 1000,
-              mask: true
-            })
-            // 服务器存储图片地址
-            const msg = 'http://***' + imgPath
-            // 发送图片URL
-            zg.sendRoomMsg(1, msg,
-              function (seq, msgId, msg_category, msg_type, msg_content) {
-                console.log('>>>[liveroom-room] onComment success');
-              }, function (err, seq, msg_category, msg_type, msg_content) {
-                console.log('>>>[liveroom-room] onComment, error: ');
-                console.log(err);
-              });
-          } else {
-            wx.showToast({
-              title: '发送失败',
-              duration: 1000,
-              mask: true
-            })
-          }
-        },
-        fail(err) {
-          console.log(err)
-          wx.hideLoading()
-          wx.showToast({
-            title: '发送失败',
-            duration: 1000,
-            mask: true
-          })
-        }
-      })
-      setTimeout(() => {
-        wx.showModal({
-          title: '提示',
-          content: '是否保存到手机相册',
-          success(resInfo) {
-            if (resInfo.confirm) {
-              console.log('saveImageToPhotosAlbum confirm')
-              that._saveImageToPhotosAlbum(ret.tempImagePath)
-            } else if (resInfo.cancel) {
-              console.log('saveImageToPhotosAlbum cancel')
-            }
-          }
-        })
-      }, 3000)
-    }
-    const failCallback = (err) => {
-      console.log('>>>[liveroom-room] snapshot fail', err)
-    }
-    if (this.data.loginType === 'anchor') {
-      this.data.pusherVideoContext && this.data.pusherVideoContext.snapshot({
-        success: sucCallback,
-        fail: failCallback,
-      });
-    } else if (this.data.loginType === 'audience') {
-      console.log('playStreamList', this.data.playStreamList)
-      if (this.data.playStreamList[0].playContext.snapshot) {
-        this.data.playStreamList.forEach(streamInfo => {
-          streamInfo.playContext && streamInfo.playContext.snapshot({
-            success: sucCallback,
-            fail: failCallback
-          })
-        })
-      } else {
-        wx.showModal({
-          title: '提示',
-          content: '当前微信版本过低，无法使用该功能，请升级到最新微信版本后再试。',
-          showCancel: false,
-        });
-      }
-
-    }
-
-  },
-  _saveImageToPhotosAlbum(imgPath) {
-    // 保存图片到本地相册
-    wx.getSetting({
-      success(res) {
-        console.log('setting', res)
-        if (!res.authSetting['scope.writePhotosAlbum']) {
-          wx.authorize({
-            scope: 'scope.writePhotosAlbum',
-            success() {
-              console.log('授权成功')
-              wx.saveImageToPhotosAlbum({
-                filePath: imgPath,
-                success(result) {
-                  console.log('writePhotosAlbum', result)
-                },
-                fail(error) {
-                  console.log('writePhotosAlbum', error)
-                }
-              })
-            }
-          })
-        } else if (res.authSetting['scope.writePhotosAlbum']) {
-          wx.saveImageToPhotosAlbum({
-            filePath: imgPath,
-            success(result) {
-              console.log('writePhotosAlbum', result)
-            },
-            fail(error) {
-              console.log('writePhotosAlbum', error)
-            }
-          })
-        }
-      }
-    })
-  },
-
   // 设置镜像
   setMirror() {
     this.setData({
@@ -1208,7 +1069,7 @@ Page({
     wsServerURL = getApp().globalData.wsServerURL;
     logServerURL = getApp().globalData.logServerURL;
     tokenURL = getApp().globalData.tokenURL;
-    testEnvironment = getApp().globalData.testEnvironment;
+    // testEnvironment = getApp().globalData.testEnvironment;
   },
 
   /**

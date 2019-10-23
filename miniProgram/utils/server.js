@@ -1,4 +1,4 @@
-function _request({url, data = {}, testMode = true}) {
+function _request({url, data = {}}) {
     return new Promise((res, rej) => {
         wx.request({
             url,
@@ -11,12 +11,7 @@ function _request({url, data = {}, testMode = true}) {
                 if (result.statusCode != 200) {
                     return;
                 }
-                if (testMode) {
-                    res(result.data);
-                } else {
-                    const token = /token:\s(.+)/.exec(result.data)&&/token:\s(.+)/.exec(result.data)[1];
-                    res(token)
-                }
+                res(result.data);
             },
             fail(e) {
                 console.log(">>>[liveroom-room] get login token fail, error is: ")
@@ -34,8 +29,7 @@ function getLoginToken(userID, appid) {
         data: {
             app_id: appid,
             id_name: userID,
-        },
-        testMode: true
+        }
     })
 }
 

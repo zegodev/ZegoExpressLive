@@ -17,18 +17,6 @@ Page({
                 navigateTo: "../liveroom/roomlist/roomlist"
             },
             // {
-            //     icon: "../../resource/interactionLive.png",
-            //     subtitle: '<live-room>',
-            //     title: "视频直播",
-            //     navigateTo: "../usecomponents/live-room/roomlist/roomlist"
-            // },
-            // {
-            //     icon: "../../resource/videotlak.png",
-            //     subtitle: '<rtc-room>',
-            //     title: "互动视频",
-            //     navigateTo: "../usecomponents/rtc-room/roomName/roomName"
-            // },
-            // {
             //     icon: "../../resource/playRtmp.png",
             //     subtitle: 'debug推拉流地址',
             //     title: "自定义推拉流",
