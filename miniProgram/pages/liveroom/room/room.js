@@ -5,7 +5,7 @@ let { getLoginToken } = require("../../../utils/server.js");
 let zg;
 //获取应用实例
 const app = getApp();
-let { liveAppID: appID, wsServerURL, logServerURL, tokenURL, testEnvironment } = app.globalData;
+let { liveAppID: appID, wsServerURL, logServerURL, tokenURL } = app.globalData;
 
 
 /**
@@ -15,16 +15,16 @@ Page({
   data: {
     loginType: '',          // 登录类型。anchor：主播；audience：观众
     roomID: "",             // 房间 ID
-    roomName: "",            // 房间名
+    roomName: "",           // 房间名
     userID: "",             // 当前初始化的用户 ID
     userName: "",           // 当前初始化的用户名
-    appID: 0,              // appID，用于初始化 sdk
+    appID: 0,               // appID，number类型，用于初始化 sdk
     anchorID: "",           // 主播 ID
     anchorName: "",         // 主播名
     anchorStreamID: "",     // 主播推流的流 ID
     publishStreamID: "",    // 推流 ID
     pusherVideoContext: {}, // live-pusher Context，内部只有一个对象
-    playStreamList: [],     // 拉流流信息列表，列表中每个对象结构为 {anchorID:'xxx', streamID:'xxx', playContext:{}, playUrl:'xxx', playingState:'xxx'}
+    playStreamList: [],     // 拉流流信息列表，列表中每个对象结构为 { streamID:'xxx', playContext:{}, playUrl:'xxx', playingState:'xxx'}
     beginToPublish: false,  // 准备连麦标志位
     reachStreamLimit: false,// 房间内达到流上限标志位
     isPublishing: false,    // 是否正在推流
@@ -61,7 +61,7 @@ Page({
     scrollToView: "",
     imgTempPath: "",
     tryPlayCount: 0,
-    mixStreamStart: false
+    mixStreamStart: false,
   },
 
   /**
@@ -104,17 +104,12 @@ Page({
     zg = new ZegoClient(this.data.appID, wsServerURL, this.data.userID);
     // 高级配置
     // zg.config({
-    //     appid: this.data.appID,        // 必填，应用id，由即构提供
-    //     idName: this.data.userID,      // 必填，用户自定义id，全局唯一
     //     nickName: this.data.userName,  // 必填，用户自定义昵称
     //     remoteLogLevel: 2,             // 日志上传级别，建议取值不小于 logLevel
     //     logLevel: 0,                   // 日志级别，debug: 0, info: 1, warn: 2, error: 3, report: 99, disable: 100（数字越大，日志越少）
-    //     server: wsServerURL,        // 必填，服务器地址，由即构提供
     //     logUrl: logServerURL,   // 必填，log 服务器地址，由即构提供
-    //     audienceCreateRoom: true,     // false观众不允许创建房间
     //     testEnvironment:!!testEnvironment
     // });
-    // this.bindCallBack();  //监听zego-sdk回调
 
     this.onBindCallback(); // 监听sdk on 回调
     console.log('>>>[liveroom-room] publishStreamID is: ' + this.data.publishStreamID);
@@ -416,6 +411,7 @@ Page({
     self.setData({
       playStreamList: self.data.playStreamList,
     }, function () {
+      console.log('playStreamList', self.data.playStreamList)
       // 检查流新增后，是否已经达到房间流上限
       if (self.data.playStreamList.length >= self.data.upperStreamLimit) {
 
@@ -669,6 +665,12 @@ Page({
       console.log('mixParam', mixParam);
       zg.startMixStream(mixParam).then(mixPlayInfoList => {
         console.log('mixPlayInfoList: ', mixPlayInfoList);
+        for(let i = 0; i < mixPlayInfoList.length; i++) {
+          // self.setData({
+          //   mixStreamUrl: mixPlayInfoList[i].rtmpUrl
+          // });
+          self.setPlayUrl(mixPlayInfoList[i].streamId, mixPlayInfoList[i].rtmpUrl)
+        }
         self.setData({
           mixStreamStart: true
         })

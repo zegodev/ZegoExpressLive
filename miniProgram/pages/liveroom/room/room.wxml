@@ -67,7 +67,6 @@
         </live-player>
     </view>
 
-
 </view>
 
 <scroll-view
@@ -101,10 +100,10 @@
             <image src='../../../resource/{{pushConfig.bgmPaused ? "play":"pause"}}.png'></image>
             <text>{{pushConfig.bgmPaused?"恢复":"暂停"}}背景音</text>
         </view>
-        <view class="img-box" bindtap="snapshot">
+        <!-- <view class="img-box" bindtap="snapshot">
             <image src='../../../resource/snapshot.png'></image>
             <text>截图发送</text>
-        </view>
+        </view> -->
         <view class="img-box" bindtap="setMirror">
             <image src='../../../resource/snapshot.png'></image>
             <text>{{pushConfig.isMirror?"关闭":"打开"}}镜像</text>
