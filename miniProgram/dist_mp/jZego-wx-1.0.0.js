@@ -583,8 +583,8 @@ var BaseCenter = /** @class */ (function (_super) {
         this.streamHandler.onStreamUpdated = function (type, streamList) {
             _this.actionListener('remoteStreamUpdated', type, streamList);
         };
-        this.streamHandler.onPublishStateUpdate = function (type, streamid, error) {
-            _this.actionListener('publishStateChange', { type: type, streamid: streamid, error: error });
+        this.streamHandler.onPublishStateUpdate = function (type, streamId, error) {
+            _this.actionListener('publishStateChange', { type: type, streamId: streamId, error: error });
         };
         this.streamHandler.onStreamExtraInfoUpdated = function (streamList) {
             _this.actionListener('streamExtraInfoUpdated', streamList);
@@ -824,29 +824,6 @@ var BaseCenter = /** @class */ (function (_super) {
     };
     BaseCenter.prototype.updateStreamExtraInfo = function (streamid, extraInfo) {
         return this.streamHandler.updateStreamExtraInfo(streamid, extraInfo);
-    };
-    BaseCenter.prototype.on = function (listener, callBack) {
-        if (!this.stateCenter.listenerList[listener]) {
-            this.logger.error('zc.o.0 listener wrong');
-            return false;
-        }
-        this.stateCenter.listenerList[listener].indexOf(callBack) == -1 &&
-            this.stateCenter.listenerList[listener].push(callBack);
-        return true;
-    };
-    BaseCenter.prototype.off = function (listener, callBack) {
-        if (!this.stateCenter.listenerList[listener]) {
-            this.logger.error('zc.o.1 listener wrong');
-            return false;
-        }
-        var li = this.stateCenter.listenerList[listener];
-        if (callBack) {
-            li.splice(li.indexOf(callBack), 1);
-        }
-        else {
-            this.stateCenter.listenerList[listener] = [];
-        }
-        return true;
     };
     BaseCenter.prototype.actionListener = function (listener) {
         var args = [];
@@ -5035,13 +5012,36 @@ var ZegoClient = /** @class */ (function (_super) {
             _this.stateCenter.configOK = true;
         }
         _this.init();
-        _this.streamCenter.onPublishStateUpdate = function (type, streamid, error) {
-            _this.onPublishStateUpdateHandle(type, streamid, error);
+        _this.streamCenter.onPublishStateUpdate = function (type, streamId, error) {
+            _this.onPublishStateUpdateHandle(type, streamId, error);
         };
         return _this;
     }
     ZegoClient.prototype.getSocket = function (server) {
         return new zego_webSocket_1.ZegoWebSocket(server);
+    };
+    ZegoClient.prototype.on = function (listener, callBack) {
+        if (!this.stateCenter.listenerList[listener]) {
+            this.logger.error('zc.o.0 listener wrong');
+            return false;
+        }
+        this.stateCenter.listenerList[listener].indexOf(callBack) == -1 &&
+            this.stateCenter.listenerList[listener].push(callBack);
+        return true;
+    };
+    ZegoClient.prototype.off = function (listener, callBack) {
+        if (!this.stateCenter.listenerList[listener]) {
+            this.logger.error('zc.o.1 listener wrong');
+            return false;
+        }
+        var li = this.stateCenter.listenerList[listener];
+        if (callBack) {
+            li.splice(li.indexOf(callBack), 1);
+        }
+        else {
+            this.stateCenter.listenerList[listener] = [];
+        }
+        return true;
     };
     /*
      *    "zc.p.sppst.0": "ZegoClient.setPreferPlaySourceType",
@@ -5083,12 +5083,12 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "zc.p.sps.0": "ZegoClient.startPlayingStream",
      */
     // 播放流
-    ZegoClient.prototype.getPlayerUrl = function (streamId, streamParams) {
+    ZegoClient.prototype.getPlayerUrl = function (streamId, option) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.logger.debug('zc.p.sps.0 call');
             if (!streamId || streamId === '') {
-                _this.logger.info('zc.p.sps.0 streamid error');
+                _this.logger.info('zc.p.sps.0 streamId error');
                 reject(zego_error_1.commonErrorList.PARAM);
                 return;
             }
@@ -5097,7 +5097,14 @@ var ZegoClient = /** @class */ (function (_super) {
                 reject(zego_error_1.commonErrorList.NOT_LOGIN);
                 return;
             }
-            _this.streamCenter.updatePlayingState(streamId, streamParams, true);
+            _this.streamCenter.updatePlayingState(streamId, option ? option.streamParams : undefined, true);
+            if (option && option.isMix) {
+                _this.mixStreamList[streamId] = {
+                    urltra_url_rtmp: null,
+                };
+                _this.fetchPlayStreamUrl(streamId, 'rtmp_cdn', resolve);
+                return;
+            }
             _this.streamCenter.onPlayerStreamUrlUpdate = function (streamId, url) {
                 resolve({ streamId: streamId, url: url });
             };
@@ -5126,18 +5133,21 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "zc.p.sps.1.0": "ZegoClient.stopPlayingStream",
      */
     // 停止流
-    ZegoClient.prototype.stopPlayer = function (streamid) {
+    ZegoClient.prototype.stopPlayer = function (streamId) {
         this.logger.debug('zc.p.sps.1.0 call');
-        if (!streamid || streamid === '') {
+        if (!streamId || streamId === '') {
             this.logger.info('zc.p.sps.1.0 param error');
             return false;
         }
-        this.streamCenter.stopPlayingStream(streamid);
+        this.streamCenter.stopPlayingStream(streamId);
         for (var seq in this.stateCenter.streamUrlMap) {
-            if (this.stateCenter.streamUrlMap[seq] === streamid) {
+            if (this.stateCenter.streamUrlMap[seq] === streamId) {
                 delete this.stateCenter.streamUrlMap[seq];
                 break;
             }
+        }
+        if (this.mixStreamList[streamId]) {
+            delete this.mixStreamList[streamId];
         }
         this.logger.debug('zc.p.sps.1.0 call success');
         return true;
@@ -5146,12 +5156,12 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "zc.p.sps.1": "ZegoClient.startPublishingStream",
      */
     //开始推流
-    ZegoClient.prototype.getPusherUrl = function (streamid, publishOption) {
+    ZegoClient.prototype.getPusherUrl = function (streamId, publishOption) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.logger.debug('zc.p.sps.1 call');
-            if (!streamid) {
-                _this.logger.error('zc.p.sps.1 streamid no found');
+            if (!streamId) {
+                _this.logger.error('zc.p.sps.1 streamId no found');
                 reject(zego_error_1.commonErrorList.PARAM);
                 return;
             }
@@ -5160,13 +5170,13 @@ var ZegoClient = /** @class */ (function (_super) {
                 reject(zego_error_1.commonErrorList.NOT_LOGIN);
                 return;
             }
-            _this.stateCenter.publishStreamList[streamid] = {
+            _this.stateCenter.publishStreamList[streamId] = {
                 state: zego_entity_1.ENUM_PUBLISH_STREAM_STATE.waiting_url,
                 extra_info: publishOption && publishOption.extraInfo ? publishOption.extraInfo : null,
             };
             _this.logger.info('zc.p.sps.0 fetch stream url');
-            _this.streamCenter.updatePublishingState(streamid, publishOption && publishOption.streamParams ? publishOption.streamParams : undefined, true);
-            _this.fetchPublishStreamUrl(streamid);
+            _this.streamCenter.updatePublishingState(streamId, publishOption && publishOption.streamParams ? publishOption.streamParams : undefined, true);
+            _this.fetchPublishStreamUrl(streamId);
             //need to check whether play to switch line
             if (_this.streamCenter.isPlaying()) {
                 //如果是BGP推流，选择auto拉流模式，需要切换服务器
@@ -5174,7 +5184,7 @@ var ZegoClient = /** @class */ (function (_super) {
                     _this.currentPlaySourceType == zego_entity_1.ENUM_DISPATCH_TYPE.cdn) {
                     //switch CDN to bgp
                     for (var i = 0; i < _this.streamCenter.playingList.length; i++) {
-                        var playStreamId = _this.streamCenter.playingList[i].streamid;
+                        var playStreamId = _this.streamCenter.playingList[i].streamId;
                         var params = _this.streamCenter.playingList[i].params;
                         _this.stopPlayer(playStreamId);
                         _this.streamCenter.updatePlayingState(playStreamId, params, true);
@@ -5191,24 +5201,24 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "zc.p.spls.1.1": "ZegoClient.stopPublishLocalStream",
      */
     //结束推流
-    ZegoClient.prototype.stopPusher = function (streamid) {
+    ZegoClient.prototype.stopPusher = function (streamId) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.logger.debug('zc.p.sps.1.1 call');
-            if (!streamid || streamid === '') {
+            if (!streamId || streamId === '') {
                 _this.logger.info('zc.p.sps.1.1 param error');
                 reject(zego_error_1.commonErrorList.PARAM);
                 return;
             }
-            _this.streamCenter.stopPublishingStream(streamid);
-            if (_this.stateCenter.publishStreamList[streamid]) {
-                if (_this.stateCenter.publishStreamList[streamid].state >= zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info) {
-                    _this.updateStreamInfo(streamid, zego_entity_1.ENUM_STREAM_SUB_CMD.liveEnd);
+            _this.streamCenter.stopPublishingStream(streamId);
+            if (_this.stateCenter.publishStreamList[streamId]) {
+                if (_this.stateCenter.publishStreamList[streamId].state >= zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info) {
+                    _this.updateStreamInfo(streamId, zego_entity_1.ENUM_STREAM_SUB_CMD.liveEnd);
                 }
-                delete _this.stateCenter.publishStreamList[streamid];
+                delete _this.stateCenter.publishStreamList[streamId];
             }
-            if (_this.stateCenter.streamUrlMap[streamid]) {
-                delete _this.stateCenter.streamUrlMap[streamid];
+            if (_this.stateCenter.streamUrlMap[streamId]) {
+                delete _this.stateCenter.streamUrlMap[streamId];
             }
             _this.logger.debug('zc.p.sps.1.1 call success');
             resolve();
@@ -5222,67 +5232,28 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "zc.p.upe.0": "ZegoClient.updatePlayerEvent",
      */
     // 更新播放器事件
-    ZegoClient.prototype.updatePlayerState = function (streamid, event) {
+    ZegoClient.prototype.updatePlayerState = function (streamId, event) {
         //通知playercenter
         this.logger.debug('zc.p.upe.0 call');
-        this.streamCenter.updatePlayerState(streamid, event);
+        this.streamCenter.updatePlayerState(streamId, event);
     };
     /*
      *    "zc.p.upns.0": "ZegoClient.updatePlayerEvent",
      */
     // 更新推拉流质量
-    ZegoClient.prototype.updatePlayerNetStatus = function (streamid, event) {
+    ZegoClient.prototype.updatePlayerNetStatus = function (streamId, event) {
         this.logger.debug('zc.p.upns.0 call');
-        this.streamCenter.updatePlayerNetStatus(streamid, event);
+        this.streamCenter.updatePlayerNetStatus(streamId, event);
     };
     /*
      *    "zc.p.spms.0": "ZegoClient.startPlayingMixStream",
      */
-    //混流接口
-    ZegoClient.prototype.startPlayingMixStream = function (mixStreamId, stream_params) {
-        this.logger.debug('zc.p.spms.0 call');
-        if (!mixStreamId || mixStreamId === '') {
-            this.logger.info('zc.p.spms.0 param error');
-            return false;
-        }
-        if (!this.stateCenter.isLogin()) {
-            this.logger.info('zc.p.spms.0 not login');
-            return false;
-        }
-        this.streamCenter.updatePlayingState(mixStreamId, stream_params, true);
-        this.mixStreamList[mixStreamId] = {
-            urltra_url_rtmp: null,
-        };
-        this.fetchPlayStreamUrl(mixStreamId, 'rtmp_cdn');
-        this.logger.debug('zc.p.spms.0 call success');
-        return true;
-    };
-    /*
-     *    "zc.p.spms.1": "ZegoClient.stopPlayingMixStream",
-     */
-    ZegoClient.prototype.stopPlayingMixStream = function (mixStreamId) {
-        this.logger.debug('zc.p.spms.1 call');
-        if (!mixStreamId || mixStreamId === '') {
-            this.logger.info('zc.p.spms.1 param error');
-            return false;
-        }
-        this.streamCenter.stopPlayingStream(mixStreamId);
-        for (var seq in this.stateCenter.streamUrlMap) {
-            if (this.stateCenter.streamUrlMap[seq] === mixStreamId) {
-                delete this.stateCenter.streamUrlMap[seq];
-                break;
-            }
-        }
-        delete this.mixStreamList[mixStreamId];
-        this.logger.debug('zc.p.spms.1 call success');
-        return true;
-    };
     //从CDN拉流
-    ZegoClient.prototype.startPlayingStreamFromCDN = function (streamid) {
+    ZegoClient.prototype.startPlayingStreamFromCDN = function (streamId) {
         this.logger.debug('zc.p.spsfc.0 call');
         var streamUrls = null; // 判断传入的流id，在当前流列表中能否找到，找到就存起相对应的流地址
         for (var i = 0; i < this.stateCenter.streamList.length; i++) {
-            if (this.stateCenter.streamList[i].stream_id === streamid) {
+            if (this.stateCenter.streamList[i].stream_id === streamId) {
                 // 根据传入的流id判断当前的流列表中是否存在该流
                 streamUrls = this.stateCenter.streamList[i].urls_rtmp || [];
                 break;
@@ -5294,21 +5265,22 @@ var ZegoClient = /** @class */ (function (_super) {
         }
         this.currentPlaySourceType = zego_entity_1.ENUM_DISPATCH_TYPE.cdn;
         this.logger.debug('zc.p.spsfc.0 play stream');
-        return this.doPlayStream(streamid, streamUrls, this.currentPlaySourceType);
+        return this.doPlayStream(streamId, streamUrls, this.currentPlaySourceType);
     };
     /*
      *    "zc.p.spsfb.0": "ZegoClient.startPlayingStreamFromBGP",
      */
     //从BGP拉流
-    ZegoClient.prototype.startPlayingStreamFromBGP = function (streamid) {
+    ZegoClient.prototype.startPlayingStreamFromBGP = function (streamId) {
         this.currentPlaySourceType = zego_entity_1.ENUM_DISPATCH_TYPE.ultra;
         this.logger.info('zc.p.sps.0 fetch stream url');
-        this.fetchPlayStreamUrl(streamid, this.ultraPlaySourceType);
+        this.fetchPlayStreamUrl(streamId, this.ultraPlaySourceType);
         return true;
     }; //拉取服务端推流信息
     /*
      *    "fpsu.0": "ZegoClient.fetchPublishStreamUrl",
-     */ ZegoClient.prototype.fetchPublishStreamUrl = function (streamid) {
+     */
+    ZegoClient.prototype.fetchPublishStreamUrl = function (streamId) {
         var _this = this;
         this.logger.debug('fpsu.0 call');
         if (!this.stateCenter.isLogin()) {
@@ -5324,7 +5296,7 @@ var ZegoClient = /** @class */ (function (_super) {
             publish_type = 'bgp';
         }
         var bodyData = {
-            stream_id: streamid,
+            stream_id: streamId,
             url_type: this.ultraPlaySourceType,
             publish_type: publish_type,
             header_kvs: [{ key: 'grpc-metadata-push', value: this.customCdnUrl || '' }],
@@ -5334,11 +5306,11 @@ var ZegoClient = /** @class */ (function (_super) {
         });
         var seq = this.socketCenter.sendMessage('stream_publish', bodyData);
         if (seq == -1) {
-            this.actionListener('publishStateChange', 1, streamid, -1);
-            this.streamCenter.stopPublishingStream(streamid);
+            this.actionListener('publishStateChange', 1, streamId, -1);
+            this.streamCenter.stopPublishingStream(streamId);
         }
         else {
-            this.stateCenter.streamUrlMap[seq] = streamid;
+            this.stateCenter.streamUrlMap[seq] = streamId;
         }
         this.logger.debug('fpsu.0 call success');
     };
@@ -5346,7 +5318,7 @@ var ZegoClient = /** @class */ (function (_super) {
      *    "fsu.0": "ZegoClient.fetchPlayStreamUrl",
      */
     // 拉取服务端流信息
-    ZegoClient.prototype.fetchPlayStreamUrl = function (streamid, urlType) {
+    ZegoClient.prototype.fetchPlayStreamUrl = function (streamId, urlType, success) {
         var _this = this;
         this.logger.debug('fsu.0 call');
         // 不是处于登录状态，不让拉流
@@ -5356,11 +5328,11 @@ var ZegoClient = /** @class */ (function (_super) {
         }
         this.logger.info('fsu.0 send fetch request');
         var bodyData = {
-            stream_ids: [streamid],
+            stream_ids: [streamId],
             url_type: urlType,
         };
         this.socketCenter.registerRouter('stream_url', function (msg) {
-            _this.handleFetchStreamUrlRsp(msg);
+            _this.handleFetchStreamUrlRsp(msg, success);
         });
         // 发送消息
         var seq = this.socketCenter.sendMessage('stream_url', bodyData, undefined, function (_err, seq) {
@@ -5372,23 +5344,23 @@ var ZegoClient = /** @class */ (function (_super) {
             }
         });
         if (seq == -1) {
-            this.actionListener('pullStateChange', 1, streamid, -1);
+            this.actionListener('pullStateChange', 1, streamId, -1);
         }
         else {
-            this.stateCenter.streamUrlMap[seq] = streamid;
+            this.stateCenter.streamUrlMap[seq] = streamId;
         }
         this.logger.debug('fsu.0 call success');
     }; //流更新信令
     /*
      *    "usi.0": "ZegoClient.updateStreamInfo",
-     */ ZegoClient.prototype.updateStreamInfo = function (streamid, cmd, stream_extra_info, error) {
+     */ ZegoClient.prototype.updateStreamInfo = function (streamId, cmd, stream_extra_info, error) {
         this.logger.debug('usi.0 call');
         var extra_info = '';
         if (stream_extra_info != undefined && typeof stream_extra_info == 'string') {
             extra_info = stream_extra_info;
         }
         var data = {
-            stream_id: streamid,
+            stream_id: streamId,
             extra_info: extra_info,
         };
         var stream_msg = JSON.stringify(data);
@@ -5417,24 +5389,24 @@ var ZegoClient = /** @class */ (function (_super) {
         this.stateCenter.streamSeq = msg.body.stream_seq;
         //流删除时，publishStreamList已经删除了
         for (var i = 0; i < msg.body.stream_info.length; i++) {
-            var streamid = msg.body.stream_info[i].stream_id;
-            if (!this.stateCenter.publishStreamList[streamid]) {
+            var streamId = msg.body.stream_info[i].stream_id;
+            if (!this.stateCenter.publishStreamList[streamId]) {
                 this.logger.info('hsur.0 stream is not exist');
                 return;
             }
-            if (this.stateCenter.publishStreamList[streamid].state == zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info) {
-                this.stateCenter.publishStreamList[streamid].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.publishing;
-                this.actionListener('publishStateChange', 0, streamid, 0);
+            if (this.stateCenter.publishStreamList[streamId].state == zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info) {
+                this.stateCenter.publishStreamList[streamId].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.publishing;
+                this.actionListener('publishStateChange', 0, streamId, 0);
             }
         }
     };
     // 播放流
-    ZegoClient.prototype.doPlayStream = function (streamid, streamUrls, sourceType) {
+    ZegoClient.prototype.doPlayStream = function (streamId, streamUrls, sourceType) {
         this.logger.debug('zc.p.dps.0 call');
         /*
                 const streamUrls = null;
                 for (const i = 0; i < this.streamList.length; i++) {
-                    if (this.streamList[i].stream_id === streamid) {
+                    if (this.streamList[i].stream_id === streamId) {
                         streamUrls = (this.streamList[i].urls_ws || []);
                         break;
                     }
@@ -5443,7 +5415,7 @@ var ZegoClient = /** @class */ (function (_super) {
         if (!streamUrls || streamUrls.length <= 0) {
             return false;
         }
-        this.streamCenter.startPlayingStream(streamid, streamUrls, sourceType);
+        this.streamCenter.startPlayingStream(streamId, streamUrls, sourceType);
         return true;
     };
     /*
@@ -5464,22 +5436,22 @@ var ZegoClient = /** @class */ (function (_super) {
             return;
         }
         if (msg.body.stream_url_info) {
-            var streamid = msg.body.stream_url_info.stream_id;
+            var streamId = msg.body.stream_url_info.stream_id;
             //return rtmp address
             var urlsWS = msg.body.stream_url_info.urls_ws;
-            if (!this.stateCenter.publishStreamList[streamid]) {
+            if (!this.stateCenter.publishStreamList[streamId]) {
                 this.logger.error('hfspur.0 cannot find stream');
                 return;
             }
-            this.stateCenter.publishStreamList[streamid].url_rtmp = urlsWS;
-            this.stateCenter.publishStreamList[streamid].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.tryPublish;
-            this.doPublishStream(streamid, urlsWS);
+            this.stateCenter.publishStreamList[streamId].url_rtmp = urlsWS;
+            this.stateCenter.publishStreamList[streamId].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.tryPublish;
+            this.doPublishStream(streamId, urlsWS);
         }
     };
     /*
      *    "hfsur.0": "ZegoClient.handleFetchStreamUrlRsp",
      */
-    ZegoClient.prototype.handleFetchStreamUrlRsp = function (msg) {
+    ZegoClient.prototype.handleFetchStreamUrlRsp = function (msg, success) {
         this.logger.debug('hfsur.0 call');
         var requestStreamId = this.stateCenter.streamUrlMap[msg.header.seq];
         if (requestStreamId) {
@@ -5489,10 +5461,11 @@ var ZegoClient = /** @class */ (function (_super) {
             this.logger.debug('hfsur.0 server error=', msg.body.err_code);
             //cann't get stream url, should callback
             this.actionListener('pullStateChange', 1, requestStreamId, msg.body.err_code + zego_entity_1.SERVER_ERROR_CODE);
+            success && success();
             return;
         }
         if (msg.body.stream_url_infos && msg.body.stream_url_infos.length > 0) {
-            var streamid = msg.body.stream_url_infos[0].stream_id;
+            var streamId = msg.body.stream_url_infos[0].stream_id;
             //return rtmp address
             var urlsWS = msg.body.stream_url_infos[0].urls_ws;
             var souceType = this.currentPlaySourceType;
@@ -5500,37 +5473,37 @@ var ZegoClient = /** @class */ (function (_super) {
             var found = false;
             // 检查拉流streamid
             for (var i = 0; i < this.stateCenter.streamList.length; i++) {
-                if (this.stateCenter.streamList[i].stream_id == streamid) {
+                if (this.stateCenter.streamList[i].stream_id == streamId) {
                     this.stateCenter.streamList[i].urltra_url_rtmp = urlsWS;
                     found = true;
                     break;
                 }
             }
             //检查混流streamid
-            if (!found && this.mixStreamList[streamid]) {
-                this.mixStreamList[streamid].urltra_url_rtmp = urlsWS;
+            if (!found && this.mixStreamList[streamId]) {
+                this.mixStreamList[streamId].urltra_url_rtmp = urlsWS;
                 souceType = zego_entity_1.ENUM_DISPATCH_TYPE.cdn;
                 found = true;
             }
             if (!found) {
                 this.logger.info('hfsur.0 cannot find streaminfo in existing stream list');
                 this.stateCenter.streamList.push({
-                    stream_id: streamid,
+                    stream_id: streamId,
                     urltra_url_rtmp: urlsWS,
                 });
             }
-            this.doPlayStream(streamid, urlsWS, souceType);
+            this.doPlayStream(streamId, urlsWS, souceType);
         }
         this.logger.debug('hfsur.0 call success');
     };
     // 发布流
-    ZegoClient.prototype.doPublishStream = function (streamid, streamUrls) {
+    ZegoClient.prototype.doPublishStream = function (streamId, streamUrls) {
         this.logger.debug('zc.p.dps.1 call');
         if (!streamUrls || streamUrls.length <= 0) {
             return false;
         }
-        this.logger.info('zc.p.dps.1 streamid: ' + streamid + 'streamUrl: ' + streamUrls);
-        this.streamCenter.startPublishingStream(streamid, streamUrls, this.preferPublishSourceType);
+        this.logger.info('zc.p.dps.1 streamId: ' + streamId + 'streamUrl: ' + streamUrls);
+        this.streamCenter.startPublishingStream(streamId, streamUrls, this.preferPublishSourceType);
         this.logger.debug('zc.p.dps.1 call success');
         return true;
     };
@@ -5556,36 +5529,36 @@ var ZegoClient = /** @class */ (function (_super) {
             client_util_1.ClientUtil.isSupportLive(resolve, reject);
         });
     };
-    ZegoClient.prototype.onPublishStateUpdateHandle = function (type, streamid, error) {
+    ZegoClient.prototype.onPublishStateUpdateHandle = function (type, streamId, error) {
         var _this = this;
         if (type == 0) {
             //start publish
-            if (this.stateCenter.publishStreamList[streamid]) {
-                if (this.stateCenter.publishStreamList[streamid].state == zego_entity_1.ENUM_PUBLISH_STREAM_STATE.tryPublish) {
-                    this.stateCenter.publishStreamList[streamid].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info;
-                    this.streamHandler.updateStreamInfo(streamid, zego_entity_1.ENUM_STREAM_SUB_CMD.liveBegin, this.stateCenter.publishStreamList[streamid].extra_info, function (err) {
-                        if (_this.stateCenter.publishStreamList[streamid] &&
-                            _this.stateCenter.publishStreamList[streamid].state ==
+            if (this.stateCenter.publishStreamList[streamId]) {
+                if (this.stateCenter.publishStreamList[streamId].state == zego_entity_1.ENUM_PUBLISH_STREAM_STATE.tryPublish) {
+                    this.stateCenter.publishStreamList[streamId].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info;
+                    this.streamHandler.updateStreamInfo(streamId, zego_entity_1.ENUM_STREAM_SUB_CMD.liveBegin, this.stateCenter.publishStreamList[streamId].extra_info, function (err) {
+                        if (_this.stateCenter.publishStreamList[streamId] &&
+                            _this.stateCenter.publishStreamList[streamId].state ==
                                 zego_entity_1.ENUM_PUBLISH_STREAM_STATE.update_info) {
-                            _this.stateCenter.publishStreamList[streamid].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.stop;
-                            _this.actionListener('publishStateChange', 1, streamid, err);
-                            _this.streamCenter.stopPlayingStream(streamid);
+                            _this.stateCenter.publishStreamList[streamId].state = zego_entity_1.ENUM_PUBLISH_STREAM_STATE.stop;
+                            _this.actionListener('publishStateChange', 1, streamId, err);
+                            _this.streamCenter.stopPlayingStream(streamId);
                         }
                     });
                 }
                 else {
-                    this.WebrtcOnPublishStateUpdateHandle(type, streamid, error);
+                    this.WebrtcOnPublishStateUpdateHandle(type, streamId, error);
                 }
                 //当前状态为publishing时，如果小程序继续回调相同的开始推流状态码，不应该再返回推流成功的回调
-                // else if (this.stateCenter.publishStreamList[streamid].state == ENUM_PUBLISH_STREAM_STATE.publishing) {
-                //     this.onPublishStateUpdate(type, streamid, error);
+                // else if (this.stateCenter.publishStreamList[streamId].state == ENUM_PUBLISH_STREAM_STATE.publishing) {
+                //     this.onPublishStateUpdate(type, streamId, error);
                 // }
             }
         }
         else {
-            this.actionListener('publishStateChange', type, streamid, error);
+            this.actionListener('publishStateChange', type, streamId, error);
             if (type == 1) {
-                this.stopPusher(streamid);
+                this.stopPusher(streamId);
             }
         }
     };
@@ -6171,7 +6144,6 @@ var ZegoStreamCenterWechat = /** @class */ (function (_super) {
         }
         // 开始拉流，调用canvas，并存储起来 存进  this.playerList中
         player = this.playerList[streamid] = new zego_play_wechat_1.ZegoPlayWechat(this.logger, streamid, streamUrlList, params, this.getReconnectLimit(dispatchType), this, dispatchType, playerType, this.dataReport);
-        console.log('>>> playerList', this.playerList)
         player.playerSeq = this.streamEventMap[streamid];
         // 拉流失败则返回不做操作
         if (!player) {

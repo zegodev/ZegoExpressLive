@@ -88,7 +88,7 @@ Page({
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
-  onReady() {
+  async onReady() {
     console.log('>>>[liveroom-room] onReady');
 
 
@@ -115,11 +115,10 @@ Page({
     console.log('>>>[liveroom-room] publishStreamID is: ' + this.data.publishStreamID);
 
     // 进入房间，自动登录
-    getLoginToken(this.data.userID, appID).then(token => {
-      this.setData({ token });
-      zg.setUserStateUpdate(true);
-      this.loginRoom(token, self);
-    });
+    const token = await getLoginToken(this.data.userID, appID);
+    this.setData({ token });
+    zg.setUserStateUpdate(true);
+    this.loginRoom(token, self);
 
   },
 
@@ -277,8 +276,8 @@ Page({
       });
     });
 
-    zg.on('roomStateUpdate', (state, reason, roomId) => {
-      console.log('>>>[liveroom-room] roomStateUpdate, state: ' + state + ', reason: ' + reason);
+    zg.on('roomStateUpdate', (state, err) => {
+      console.log('>>>[liveroom-room] roomStateUpdate, state: ' + state + ', err: ' + err);
 
     })
 
@@ -472,11 +471,12 @@ Page({
   },
 
   // 登录房间
-  loginRoom(token) {
+  async loginRoom(token) {
     let self = this;
     console.log('>>>[liveroom-room] login room, roomID: ' + self.data.roomID, ', userID: ' + self.data.userID + ', userName: ' + self.data.userName);
 
-    zg.login(self.data.roomID, token).then(streamList => {
+    try {
+      const streamList = await zg.login(self.data.roomID, token)
       console.log('>>>[liveroom-room] login success, streamList is: ');
       console.log(streamList);
 
@@ -486,20 +486,19 @@ Page({
       // 房间内已经有流，拉流
       self.startPlayingStreamList(streamList);
 
-      // const extraInfo = { currentVideoCode: 'H264', mixStreamId: self.data.MixStreamID };
+      const extraInfo = { currentVideoCode: 'H264', mixStreamId: self.data.MixStreamID };
       // 主播登录成功即推流
       if (self.data.loginType === 'anchor') {
         console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamID: ' + self.data.publishStreamID);
         zg.setPreferPublishSourceType(self.data.preferPublishSourceType);
-        // zg.startPublishingStream(self.data.publishStreamID, '', JSON.stringify(extraInfo));
         // zg.getPusherUrl(self.data.publishStreamID, {extraInfo: JSON.stringify(extraInfo)}).then(({streamId, url}) => {
         //   console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
         //   self.setPushUrl(url);
         // })
-        zg.getPusherUrl(self.data.publishStreamID).then(({streamId, url}) => {
-          console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
-          self.setPushUrl(url);
-        })
+        const streamInfo = await zg.getPusherUrl(self.data.publishStreamID);
+        const { streamId, url } = streamInfo;
+        console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
+        self.setPushUrl(url);
       } else {
         if (!self.data.pushUrl && streamList.length === 0) {
           let title = '主播已经退出！';
@@ -515,7 +514,7 @@ Page({
           });
         }
       }
-    }, (err) => {
+    } catch(err) {
       console.log('>>>[liveroom-room] login failed, error is: ', err);
       if (err) {
         let title = '登录房间失败，请稍后重试。\n失败信息：' + err.msg;
@@ -530,17 +529,16 @@ Page({
           }
         });
       }
-    });
+    }
   },
 
-  startPlayingStreamList(streamList) {
+  async startPlayingStreamList(streamList) {
     let self = this;
 
     if (streamList.length === 0) {
       console.log('>>>[liveroom-room] startPlayingStream, streamList is null');
       return;
     }
-
 
     zg.setPreferPlaySourceType(self.data.preferPlaySourceType);
 
@@ -552,10 +550,10 @@ Page({
       // let anchorID = streamList[i].anchor_id_name;  // 推这条流的用户id
       console.log('>>>[liveroom-room] startPlayingStream, playStreamID: ' + streamID);
       // 获取拉流地址接口
-      zg.getPlayerUrl(streamID).then(({streamId, url}) => {
-        console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
-        self.setPlayUrl(streamId, url);
-      })
+      const streamInfo = await zg.getPlayerUrl(streamID);
+      const {streamId, url} = streamInfo;
+      console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
+      self.setPlayUrl(streamId, url);
     }
   },
 
@@ -635,14 +633,13 @@ Page({
     });
   },
 
-  PlayOrStopMixStream() {
+  async PlayOrStopMixStream() {
     let self = this
     if (self.data.mixStreamStart) {
-      zg.stopMixStream(this.data.MixTaskId).then(() => {
-        self.stopPlayingStreamList([{streamId: this.data.MixStreamID}])
-        self.setData({
-          mixStreamStart: false
-        })
+      await zg.stopMixStream(this.data.MixTaskId)
+      self.stopPlayingStreamList([{streamId: this.data.MixStreamID}])
+      self.setData({
+        mixStreamStart: false
       });
     } else {
       const inputList = [{
@@ -673,33 +670,29 @@ Page({
         taskId: this.data.MixTaskId,
         inputList: inputList,
         outputList
-        // extraParams: [{ key: 'video_encode', value: 'vp8' }]
       };
       console.log('mixParam', mixParam);
-      zg.startMixStream(mixParam).then(mixPlayInfoList => {
+      try {
+        const mixPlayInfoList = await zg.startMixStream(mixParam)
         console.log('mixPlayInfoList: ', mixPlayInfoList);
         for(let i = 0; i < mixPlayInfoList.length; i++) {
-          self.setPlayUrl(mixPlayInfoList[i].streamId, mixPlayInfoList[i].rtmpUrl)
-          // zg.getPlayerUrl(mixPlayInfoList[i].streamId).then(({streamId, url}) => {
-          //   console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
-          //   self.setPlayUrl(streamId, url);
-          // })
-          // zg.startPlayingMixStream(mixPlayInfoList[i].streamId);
+          // self.setPlayUrl(mixPlayInfoList[i].streamId, mixPlayInfoList[i].rtmpUrl)
+          const {streamId, url} =  await zg.getPlayerUrl(mixPlayInfoList[i].streamId, {isMix: true})
+          console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
+          self.setPlayUrl(streamId, url);
         }
         self.setData({
           mixStreamStart: true
         })
-        // console.log('mixStreamId: ' + mixStreamId);
-        // console.log('mixStreamInfo: ' + JSON.stringify(mixStreamInfo));
-      }, (err) => {
+      } catch(err) {
         console.log('err: ', err);
         // console.log('errorInfo: ' + JSON.stringify(errorInfo));
-      });
+      };
     }
     
   },
 
-  transCode() {
+  async transCode() {
     const streamList = [{
             streamId: this.data.publishStreamID,
             layout: {
@@ -709,7 +702,7 @@ Page({
                     right: 640,
             }
     }];
-    zg.startMixStream ({
+    const res = await zg.startMixStream ({
             taskId: this.data.MixTaskId,
             inputList: streamList,
             outputList: [{
@@ -723,9 +716,8 @@ Page({
             advance: {
                     videoCodec: 'vp8'
             }
-    }).then(res => {
-      console.log('transCode', res)
-    });
+    })
+    console.log('transCode', res)
   },
 
   //live-player 绑定拉流事件
@@ -915,11 +907,9 @@ Page({
         // 主播同意连麦后，观众开始推流
         console.log('>>>[liveroom-room] startPublishingStream, userID: ' + userID + ', publishStreamID: ' + self.data.publishStreamID);
         zg.setPreferPublishSourceType(self.data.preferPublishSourceType);
-        zg.getPusherUrl(self.data.publishStreamID).then(({streamId, url}) => {
-          console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
-          self.setPushUrl(url);
-        });
-
+        const {streamId, url} = zg.getPusherUrl(self.data.publishStreamID)
+        console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
+        self.setPushUrl(url);
       }
     });
   },
@@ -1048,7 +1038,7 @@ Page({
   bindMessageInput: function (e) {
     this.data.inputMessage = e.detail.value;
   },
-  onComment() {
+  async onComment() {
     console.log('>>>[liveroom-room] begin to comment', this.data.inputMessage);
 
     let message = {
@@ -1069,20 +1059,13 @@ Page({
 
     this.showMessage();
 
-    // zg.sendRoomMsg(1, 1, message.content).then(
-    //   ({seq, msgId, msg_category, msg_type, msg_content}) => {
-    //     console.log('>>>[liveroom-room] onComment success');
-    //   }, ({err, seq, msg_category, msg_type, msg_content}) => {
-    //     console.log('>>>[liveroom-room] onComment, error: ');
-    //     console.log(err);
-    //   });
-    zg.sendRoomMsg(1, message.content).then(
-      (res) => {
-        console.log('>>>[liveroom-room] onComment success', res);
-      }, (error) => {
+    try {
+      const res = await zg.sendRoomMsg(1, message.content)
+      console.log('>>>[liveroom-room] onComment success', res);
+    }catch(error) {
         console.log('>>>[liveroom-room] onComment, error: ');
         console.log(error);
-      });
+    };
   },
 
 
