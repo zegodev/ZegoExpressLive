@@ -41,8 +41,8 @@ Page({
     playConfig: {
       mode: 'RTC',
     },
-    preferPublishSourceType: 1, // 0：推流到 cdn；1：推流到 bgp
-    preferPlaySourceType: 1,    // 0：auto；1：从 bgp 拉流
+    pushSourceType: 1, // 0：推流到 cdn；1：推流到 bgp
+    playSourceType: 0,    // 0：auto；1：从 bgp 拉流
     upperStreamLimit: 4,        // 房间内限制为最多 4 条流，当流数大于 4 条时，禁止新进入的用户连麦
     connectType: -1,  // -1为初始状态，1为连接，0断开连接
     tapTime: "",
@@ -71,7 +71,6 @@ Page({
       roomID,
       roomName,
       loginType,
-      preferPlaySourceType: 0,
     });
 
 
@@ -101,7 +100,8 @@ Page({
     zg = new ZegoClient(this.data.appID, wsServerURL, this.data.userID);
     // 高级配置
     // zg.config({
-    //   
+    //   pushSourceType: this.data.pushSourceType,
+    //   playSourceType: this.data.playSourceType
     // })
 
     this.onBindCallback(); // 监听sdk on 回调
@@ -458,7 +458,6 @@ Page({
       // 主播登录成功即推流
       if (self.data.loginType === 'anchor') {
         console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamID: ' + self.data.publishStreamID);
-        zg.setPreferPublishSourceType(self.data.preferPublishSourceType);
         
         let streamInfo;
         if (isCodec) {
@@ -510,10 +509,6 @@ Page({
       console.log('>>>[liveroom-room] startPlayingStream, streamList is null');
       return;
     }
-
-    zg.setPreferPlaySourceType(self.data.preferPlaySourceType);
-
-    console.log('>>>[liveroom-room] startPlayingStream, preferPlaySourceType: ', self.data.preferPlaySourceType);
 
     // 获取每个 streamID 对应的拉流 url
     for (let i = 0; i < streamList.length; i++) {
