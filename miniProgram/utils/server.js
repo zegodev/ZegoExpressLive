@@ -1,7 +1,7 @@
 function _request({url, data = {}}) {
     return new Promise((res, rej) => {
         wx.request({
-            url,
+            url,  //该接口由开发者后台自行实现，开发者的 Token 从各自后台获取
             data,
             header: {
                 'content-type': 'text/plain'

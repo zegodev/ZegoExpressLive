@@ -81,13 +81,6 @@
 
 <view class="operate">
     <view wx:if="{{isMessageHide}}">
-        <!-- <view class='img-box'>
-            <image src='../../../resource/{{loginType == "anchor" ? (playStreamList.length > 0 ? "noJoin" : "noJoin") : (beginToPublish ? "noJoin" : (reachStreamLimit == true ? "noJoin" : (isPublishing == true ? "endJoin" : "join")))}}.png'
-                   bindtap="requestJoinLive"></image>
-            <text>{{loginType == "anchor" ? (playStreamList.length > 0 ? "正在连麦" : "等待连麦") : (beginToPublish ? "准备连麦" :
-                (reachStreamLimit == true ? "禁止连麦" : (isPublishing == true ? "结束连麦" : "申请连麦")))}}
-            </text>
-        </view> -->
         <view class='img-box' bindtap="switchCamera">
             <image src='../../../resource/switchCamera.png'></image>
             <text>切换相机</text>
