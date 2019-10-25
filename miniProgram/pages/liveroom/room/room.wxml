@@ -1,7 +1,7 @@
 <wxs src="../../../utils/stringUtil.wxs" module="stringUtil"/>
 
 <zego-nav>
-    <view>{{stringUtil.substr(roomName === "no name" || roomName.length == 0 ? roomID + "（房间 ID）" : roomName,18)}}
+    <view>{{stringUtil.substr(roomName === "no name" || roomName.length == 0 ? roomId + "（房间 Id）" : roomName,18)}}
     </view>
 </zego-nav>
 
@@ -27,7 +27,7 @@
                 bindbgmcomplete="onBgmComplete"
                 waiting-image="https://storage.zego.im/downloads/pause_publish.png">
             <cover-view class='character'>
-                {{isPublishing ? "我(" + publishStreamID + ")": ""}}
+                {{isPublishing ? "我(" + publishStreamId + ")": ""}}
             </cover-view>
             <cover-view class='poster' wx:if="{{!isPublishing}}">
                 <cover-image src="../../../resource/loading.png" mode="aspectFit"></cover-image>
@@ -38,11 +38,11 @@
     <view wx:if="{{playStreamList.length}}"
           class="{{(!pushUrl&&playStreamList.length==1)?'big-video':'small-video'}}"
           wx:for="{{playStreamList}}"
-          wx:key="{{item.streamID}}">
+          wx:key="{{item.streamId}}">
         <live-player
                 autoplay
                 wx:if="{{item.playUrl}}"
-                id="{{item.streamID}}"
+                id="{{item.streamId}}"
                 mode="{{playConfig.mode}}"
                 muted="{{false}}"
                 object-fit="contain"
@@ -59,7 +59,7 @@
                              mode="aspectFit"></cover-image>
             </cover-view>
             <cover-view class='character' wx:if="{{item.playingState === 'succeeded'}}">
-                {{item.streamID}}
+                {{item.streamId}}
             </cover-view>
             <cover-view class='poster' wx:elif="{{item.playingState === 'failed'}}">
                 <cover-image src="../../../resource/loading_fail.png" mode="aspectFit"></cover-image>

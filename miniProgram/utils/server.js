@@ -1,8 +1,12 @@
-function _request({url, data = {}}) {
+function getLoginToken(userId, appId) {
+    let { tokenURL } = getApp().globalData;
     return new Promise((res, rej) => {
         wx.request({
-            url,  //该接口由开发者后台自行实现，开发者的 Token 从各自后台获取
-            data,
+            url: tokenURL,  //该接口由开发者后台自行实现，开发者的 Token 从各自后台获取
+            data: {
+                app_id: appId,
+                id_name: userId,
+            },
             header: {
                 'content-type': 'text/plain'
             },
@@ -19,17 +23,6 @@ function _request({url, data = {}}) {
                 rej(e)
             }
         })
-    })
-}
-
-function getLoginToken(userID, appid) {
-    let { tokenURL } = getApp().globalData;
-    return _request({
-        url: tokenURL,
-        data: {
-            app_id: appid,
-            id_name: userID,
-        }
     })
 }
 

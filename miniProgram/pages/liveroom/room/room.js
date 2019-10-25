@@ -5,7 +5,7 @@ let { getLoginToken } = require("../../../utils/server.js");
 let zg;
 //获取应用实例
 const app = getApp();
-let { liveAppID: appID, wsServerURL, logServerURL, tokenURL, isCodec } = app.globalData;
+let { appId, wsServerURL, logServerURL, tokenURL, isCodec } = app.globalData;
 
 
 /**
@@ -14,14 +14,14 @@ let { liveAppID: appID, wsServerURL, logServerURL, tokenURL, isCodec } = app.glo
 Page({
   data: {
     loginType: '',          // 登录类型。anchor：主播；audience：观众
-    roomID: "",             // 房间 ID
+    roomId: "",             // 房间 Id
     roomName: "",           // 房间名
-    userID: "",             // 当前初始化的用户 ID
+    userId: "",             // 当前初始化的用户 Id
     userName: "",           // 当前初始化的用户名
-    appID: 0,               // appID，number类型，用于初始化 sdk
-    publishStreamID: "",    // 推流 ID
+    appId: 0,               // appId，number类型，用于初始化 sdk
+    publishStreamId: "",    // 推流 Id
     pusherVideoContext: {}, // live-pusher Context，内部只有一个对象
-    playStreamList: [],     // 拉流流信息列表，列表中每个对象结构为 { streamID:'xxx', playContext:{}, playUrl:'xxx', playingState:'xxx'}
+    playStreamList: [],     // 拉流流信息列表，列表中每个对象结构为 { streamId:'xxx', playContext:{}, playUrl:'xxx', playingState:'xxx'}
     beginToPublish: false,  // 准备连麦标志位
     reachStreamLimit: false,// 房间内达到流上限标志位
     isPublishing: false,    // 是否正在推流
@@ -64,11 +64,11 @@ Page({
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad({ roomID, roomName, loginType }) {
-    console.log('>>>[liveroom-room] onLoad, options are: ', roomID);
+  onLoad({ roomId, roomName, loginType }) {
+    console.log('>>>[liveroom-room] onLoad, options are: ', roomId);
     roomName = roomName ? roomName : '';
     this.setData({
-      roomID,
+      roomId,
       roomName,
       loginType,
     });
@@ -90,14 +90,14 @@ Page({
 
     let timestamp = new Date().getTime();
     this.setData({
-      userID: 'xcxU' + timestamp,
+      userId: 'xcxU' + timestamp,
       userName: 'xcxU' + timestamp,
-      appID,
-      publishStreamID: 'xcxS' + timestamp,
-      MixStreamID: 'xcxMixS' + timestamp,
+      appId,
+      publishStreamId: 'xcxS' + timestamp,
+      MixStreamId: 'xcxMixS' + timestamp,
       MixTaskId: 'xcxMixT' + timestamp
     });
-    zg = new ZegoClient(this.data.appID, wsServerURL, this.data.userID);
+    zg = new ZegoClient(this.data.appId, wsServerURL, this.data.userId);
     // 高级配置
     // zg.config({
     //   pushSourceType: this.data.pushSourceType,
@@ -105,10 +105,10 @@ Page({
     // })
 
     this.onBindCallback(); // 监听sdk on 回调
-    console.log('>>>[liveroom-room] publishStreamID is: ' + this.data.publishStreamID);
+    console.log('>>>[liveroom-room] publishStreamId is: ' + this.data.publishStreamId);
 
     // 进入房间，自动登录
-    const token = await getLoginToken(this.data.userID, appID);
+    const token = await getLoginToken(this.data.userId, appId);
     this.setData({ token });
     zg.setUserStateUpdate(true);
     this.loginRoom(token, self);
@@ -127,7 +127,7 @@ Page({
    */
   onShareAppMessage() {
     let obj = sharePage({
-      roomID: this.data.roomID,
+      roomId: this.data.roomId,
       loginType: 'audience'
     });
     console.log('onShareAppMessage', obj);
@@ -176,7 +176,7 @@ Page({
       if (type === 1) {
         // 流播放失败, 停止拉流
         for (let i = 0; i < self.data.playStreamList.length; i++) {
-          if (self.data.playStreamList[i]['streamID'] === streamId) {
+          if (self.data.playStreamList[i]['streamId'] === streamId) {
             self.data.playStreamList[i]['playContext'] && self.data.playStreamList[i]['playContext'].stop();
             self.data.playStreamList[i]['playingState'] = 'failed';
             break;
@@ -185,7 +185,7 @@ Page({
       } else if (type === 0) {
         // 流播放成功, 更新状态
         for (let i = 0; i < self.data.playStreamList.length; i++) {
-          if (self.data.playStreamList[i]['streamID'] === streamId) {
+          if (self.data.playStreamList[i]['streamId'] === streamId) {
             self.data.playStreamList[i]['playingState'] = 'succeeded';
           }
         }
@@ -224,8 +224,8 @@ Page({
     });
 
     zg.on('userStateUpdate', (roomId, userList) => {
-      console.log('user ', this.data.userID);
-      console.log('>>>[liveroom-room] onUserStateUpdate, roomID: ' + roomId + ', userList: ', userList);
+      console.log('user ', this.data.userId);
+      console.log('>>>[liveroom-room] onUserStateUpdate, roomId: ' + roomId + ', userList: ', userList);
       console.log(userList);
 
     });
@@ -266,10 +266,10 @@ Page({
       if (category === 2) {
         // 系统消息
         let data = content.split(".");
-        let streamID = data[1];
+        let streamId = data[1];
         if (data[0] === "onShow") {
           for (let i = 0; i < self.data.playStreamList.length; i++) {
-            if (self.data.playStreamList[i]["streamID"] === streamID && self.data.playStreamList[i]["playingState"] !== 'succeeded') {
+            if (self.data.playStreamList[i]["streamId"] === streamId && self.data.playStreamList[i]["playingState"] !== 'succeeded') {
               self.data.playStreamList[i]["playContext"] && self.data.playStreamList[i]["playContext"].stop();
               self.data.playStreamList[i]["playContext"] && self.data.playStreamList[i]["playContext"].play();
             }
@@ -342,7 +342,7 @@ Page({
 
   },
 
-  setPlayUrl(streamid, url) {
+  setPlayUrl(streamId, url) {
     console.log('>>>[liveroom-room] setPlayUrl: ', url);
     let self = this;
     if (!url) {
@@ -351,7 +351,7 @@ Page({
     }
 
     for (let i = 0; i < self.data.playStreamList.length; i++) {
-      if (self.data.playStreamList[i]['streamID'] === streamid && self.data.playStreamList[i]['playUrl'] === url) {
+      if (self.data.playStreamList[i]['streamId'] === streamId && self.data.playStreamList[i]['playUrl'] === url) {
         console.log('>>>[liveroom-room] setPlayUrl, streamid and url are repeated');
         return;
       }
@@ -362,7 +362,7 @@ Page({
 
     // 相同 streamid 的源已存在，更新 Url
     for (let i = 0; i < self.data.playStreamList.length; i++) {
-      if (self.data.playStreamList[i]['streamID'] === streamid) {
+      if (self.data.playStreamList[i]['streamId'] === streamId) {
         console.log('isStreamRepeated')
         isStreamRepeated = true;
         self.data.playStreamList[i]['playUrl'] = url;
@@ -373,11 +373,11 @@ Page({
       }
     }
 
-    // 相同 streamid 的源不存在，创建新 player
+    // 相同 streamId 的源不存在，创建新 player
     if (!isStreamRepeated) {
-      streamInfo['streamID'] = streamid;
+      streamInfo['streamId'] = streamId;
       streamInfo['playUrl'] = url;
-      streamInfo['playContext'] = wx.createLivePlayerContext(streamid, self);
+      streamInfo['playContext'] = wx.createLivePlayerContext(streamId, self);
       streamInfo['playingState'] = 'initial';
       self.data.playStreamList.push(streamInfo);
     }
@@ -406,7 +406,7 @@ Page({
       //播放地址更新，需要重新停止再次播放
       if (isStreamRepeated) {
         self.data.playStreamList.forEach(streamInfo => {
-          if (streamInfo.streamID == streamid) {
+          if (streamInfo.streamId == streamId) {
             streamInfo.playContext.stop();
             streamInfo.playingState = 'initial';
             streamInfo.playContext.play();
@@ -441,10 +441,10 @@ Page({
   // 登录房间
   async loginRoom(token) {
     let self = this;
-    console.log('>>>[liveroom-room] login room, roomID: ' + self.data.roomID, ', userID: ' + self.data.userID + ', userName: ' + self.data.userName);
+    console.log('>>>[liveroom-room] login room, roomId: ' + self.data.roomId, ', userId: ' + self.data.userId + ', userName: ' + self.data.userName);
 
     try {
-      const streamList = await zg.login(self.data.roomID, token)
+      const streamList = await zg.login(self.data.roomId, token);
       console.log('>>>[liveroom-room] login success, streamList is: ');
       console.log(streamList);
 
@@ -454,16 +454,16 @@ Page({
       // 房间内已经有流，拉流
       self.startPlayingStreamList(streamList);
 
-      const extraInfo = { currentVideoCode: 'H264', mixStreamId: self.data.MixStreamID };
+      const extraInfo = { currentVideoCode: 'H264', mixStreamId: self.data.MixStreamId };
       // 主播登录成功即推流
       if (self.data.loginType === 'anchor') {
-        console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamID: ' + self.data.publishStreamID);
+        console.log('>>>[liveroom-room] anchor startPublishingStream, publishStreamId: ' + self.data.publishStreamId);
         
         let streamInfo;
         if (isCodec) {
-          streamInfo = await zg.getPusherUrl(self.data.publishStreamID, {extraInfo: JSON.stringify(extraInfo)});
+          streamInfo = await zg.getPusherUrl(self.data.publishStreamId, {extraInfo: JSON.stringify(extraInfo)});
         } else {
-          streamInfo = await zg.getPusherUrl(self.data.publishStreamID);
+          streamInfo = await zg.getPusherUrl(self.data.publishStreamId);
         }
 
         const { streamId, url } = streamInfo;
@@ -510,16 +510,15 @@ Page({
       return;
     }
 
-    // 获取每个 streamID 对应的拉流 url
+    // 获取每个 streamId 对应的拉流 url
     for (let i = 0; i < streamList.length; i++) {
-      let streamID = streamList[i].streamId;
-      // let anchorID = streamList[i].anchor_id_name;  // 推这条流的用户id
-      console.log('>>>[liveroom-room] startPlayingStream, playStreamID: ' + streamID);
+      let streamId = streamList[i].streamId;
+      console.log('>>>[liveroom-room] startPlayingStream, playStreamId: ' + streamId);
       // 获取拉流地址接口
-      const streamInfo = await zg.getPlayerUrl(streamID);
-      const {streamId, url} = streamInfo;
-      console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', streamId, ' url: ',url);
-      self.setPlayUrl(streamId, url);
+      const streamInfo = await zg.getPlayerUrl(streamId);
+      const {streamId: _streamId, url} = streamInfo;
+      console.log('>>>[liveroom-room] getPlayerUrl, streamId: ', _streamId, ' url: ',url);
+      self.setPlayUrl(_streamId, url);
     }
   },
 
@@ -533,14 +532,14 @@ Page({
 
     let playStreamList = self.data.playStreamList;
     for (let i = 0; i < streamList.length; i++) {
-      let streamID = streamList[i].streamId;
+      let streamId = streamList[i].streamId;
 
-      console.log('>>>[liveroom-room] stopPlayingStream, playStreamID: ' + streamID);
-      zg.stopPlayer(streamID);
+      console.log('>>>[liveroom-room] stopPlayingStream, playStreamId: ' + streamId);
+      zg.stopPlayer(streamId);
 
       // 删除播放流列表中，删除的流
       for (let j = 0; j < playStreamList.length; j++) {
-        if (playStreamList[j]['streamID'] === streamID) {
+        if (playStreamList[j]['streamId'] === streamId) {
           console.log('>>>[liveroom-room] stopPlayingStream, stream to be deleted: ');
           console.log(playStreamList[j]);
 
@@ -606,13 +605,13 @@ Page({
     let self = this
     if (self.data.mixStreamStart) {
       await zg.stopMixStream(this.data.MixTaskId)
-      self.stopPlayingStreamList([{streamId: this.data.MixStreamID}])
+      self.stopPlayingStreamList([{streamId: this.data.MixStreamId}])
       self.setData({
         mixStreamStart: false
       });
     } else {
       const inputList = [{
-        streamId: this.data.publishStreamID,
+        streamId: this.data.publishStreamId,
         layout: {
           top: 0,
           left: 0,
@@ -622,7 +621,7 @@ Page({
       }];
       if (this.data.playStreamList.length > 0) {
         inputList.push({
-          streamId: this.data.playStreamList[0].streamID,
+          streamId: this.data.playStreamList[0].streamId,
           layout: {
             top: 480,
             left: 0,
@@ -632,7 +631,7 @@ Page({
         });
       }
       const outputList = [{
-        streamId: this.data.MixStreamID,
+        streamId: this.data.MixStreamId,
         outputBitrate: 800 * 1000,
         outputFps: 15,
         outputWidth: 640,
@@ -666,7 +665,7 @@ Page({
 
   async transCode() {
     const streamList = [{
-            streamId: this.data.publishStreamID,
+            streamId: this.data.publishStreamId,
             layout: {
                     top: 0,
                     left: 0,
@@ -678,7 +677,7 @@ Page({
             taskId: this.data.MixTaskId,
             inputList: streamList,
             outputList: [{
-                    streamId: this.data.MixStreamID,
+                    streamId: this.data.MixStreamId,
                     outputUrl: '',
                     outputBitrate: 300 * 1000,
                     outputFps: 15,
@@ -730,7 +729,7 @@ Page({
   updatePlayingStateOnly(e, newState) {
     for (let index in this.data.playStreamList) {
       let playStream = this.data.playStreamList[index];
-      if (playStream.streamID === e.currentTarget.id && playStream.playingState !== newState) {
+      if (playStream.streamId === e.currentTarget.id && playStream.playingState !== newState) {
         playStream.playingState = newState;
         this.setData({
           playStreamList: this.data.playStreamList,
@@ -743,7 +742,7 @@ Page({
   onPushStateChange(e) {
     console.log('>>>[liveroom-room] onPushStateChange, code: ' + e.detail.code + ', message:' + e.detail.message);
     // 透传推流事件给 SDK，type 1 推流
-    zg.updatePlayerState(this.data.publishStreamID, e);
+    zg.updatePlayerState(this.data.publishStreamId, e);
   },
 
   // live-player 绑定网络状态事件
@@ -759,7 +758,7 @@ Page({
   onPushNetStateChange(e) {
     //透传网络状态事件给 SDK，type 1 推流
     console.log('quality', e);
-    zg.updatePlayerNetStatus(this.data.publishStreamID, e);
+    zg.updatePlayerNetStatus(this.data.publishStreamId, e);
     zg.getStats(({streamId, type, video: {videoBitrate, videoFPS, videoWidth, videoHeight}, audio: {audioBitrate}}) => {
       console.log('>>>[liveroom-room] onPushNetStateChange, streamId is: ', streamId, ', type is: ', type === 1 ? 'push' : 'play', ', videoBitrate: ', videoBitrate, ', videoWidth: ', videoWidth, ', videoHeight: ', videoHeight, ', videoFPS: ', videoFPS, ', audioBitrate: ', audioBitrate)
     })
@@ -812,7 +811,7 @@ Page({
   },
 
   updateStreamExtra() {
-    zg.updateStreamExtraInfo(this.data.publishStreamID, 'extroInfo: send at ' + new Date())
+    zg.updateStreamExtraInfo(this.data.publishStreamId, 'extroInfo: send at ' + new Date())
   },
 
   playOrStopBgm() {
@@ -893,8 +892,8 @@ Page({
     console.log('>>>[liveroom-room] begin to comment', this.data.inputMessage);
 
     let message = {
-      id: this.data.userID + Date.parse(new Date()),
-      name: this.data.userID,
+      id: this.data.userId + Date.parse(new Date()),
+      name: this.data.userId,
       time: new Date().format("hh:mm:ss"),
       content: this.data.inputMessage,
     };
@@ -942,7 +941,7 @@ Page({
     }
 
     //刷新全局变量
-    appID = getApp().globalData.liveAppID;
+    appId = getApp().globalData.appId;
     wsServerURL = getApp().globalData.wsServerURL;
     logServerURL = getApp().globalData.logServerURL;
     tokenURL = getApp().globalData.tokenURL;
@@ -964,9 +963,9 @@ Page({
     // 停止拉流
     let streamList = this.data.playStreamList;
     for (let i = 0; i < streamList.length; i++) {
-      let streamID = streamList[i]['streamID'];
-      console.log('>>>[liveroom-room] onUnload stop play stream, streamid: ' + streamID);
-      zg.stopPlayer(streamID);
+      let streamId = streamList[i]['streamId'];
+      console.log('>>>[liveroom-room] onUnload stop play stream, streamId: ' + streamId);
+      zg.stopPlayer(streamId);
 
       streamList[i]['playContext'] && streamList[i]['playContext'].stop();
     }
@@ -977,10 +976,10 @@ Page({
 
     // 停止推流
     if (this.data.isPublishing) {
-      console.log('>>>[liveroom-room] stop publish stream, streamid: ' + this.data.publishStreamID);
-      zg.stopPusher(this.data.publishStreamID);
+      console.log('>>>[liveroom-room] stop publish stream, streamId: ' + this.data.publishStreamId);
+      zg.stopPusher(this.data.publishStreamId);
       this.setData({
-        publishStreamID: "",
+        publishStreamId: "",
         isPublishing: false,
         pushUrl: "",
       });

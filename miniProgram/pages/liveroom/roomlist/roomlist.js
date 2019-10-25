@@ -66,7 +66,7 @@ Page({
             loginType: 'audience'
         },function(){
             wx.navigateTo({
-                url:`../room/room?roomID=${id}&roomName=${name}&loginType=audience`
+                url:`../room/room?roomId=${id}&roomName=${name}&loginType=audience`
             })
         })
     },
@@ -129,7 +129,7 @@ Page({
                             }
                         }
     
-                        var url = '../room/room?roomID=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
+                        var url = '../room/room?roomId=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
                         wx.navigateTo({
                             url: url,
                         });
@@ -143,7 +143,7 @@ Page({
                 }
             })
         } else {
-            var url = '../room/room?roomID=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
+            var url = '../room/room?roomId=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
             wx.navigateTo({
                 url: url,
             });
@@ -178,7 +178,7 @@ Page({
             loginType: 'audience'
         });
 
-        var url = '../room/room?roomID=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
+        var url = '../room/room?roomId=' + self.data.roomID + '&roomName=' + self.data.roomID + '&loginType=' + self.data.loginType;
         wx.navigateTo({
             url: url,
         });
