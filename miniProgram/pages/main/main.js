@@ -22,12 +22,12 @@ Page({
             //     title: "自定义推拉流",
             //     navigateTo: "../tool/customlive/index"
             // },
-            {
-                icon: "../../resource/setting.png",
-                subtitle: '设置APPID',
-                title: "自定义设置",
-                navigateTo: "../tool/setting/index"
-            }
+            // {
+            //     icon: "../../resource/setting.png",
+            //     subtitle: '设置APPID',
+            //     title: "自定义设置",
+            //     navigateTo: "../tool/setting/index"
+            // }
         ]
     },
 
