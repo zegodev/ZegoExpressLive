@@ -1,4 +1,4 @@
-let { ZegoClient } = require("../../../dist_mp/jZego-wx-1.0.0.js");
+let { ZegoClient } = require("../../../dist_mp/jZego-wx-express-1.0.0.js");
 // let { ZegoClient } = require("miniprogram-zego-express-test");
 let { format, sharePage } = require("../../../utils/util.js");
 let { getLoginToken } = require("../../../utils/server.js");
@@ -428,7 +428,7 @@ Page({
 
     self.setData({
       pushUrl: url,
-      pusherVideoContext: wx.createLivePusherContext("video-livePusher", self),
+      pusherVideoContext: wx.createLivePusherContext(),
     }, function () {
       self.data.pusherVideoContext.stop();
       self.data.pusherVideoContext.start();
@@ -461,13 +461,13 @@ Page({
         
         let streamInfo;
         if (isCodec) {
-          streamInfo = await zg.getPusherUrl(self.data.publishStreamId, {extraInfo: JSON.stringify(extraInfo)});
+          streamInfo = await zg.startPusher(self.data.publishStreamId, {extraInfo: JSON.stringify(extraInfo)});
         } else {
-          streamInfo = await zg.getPusherUrl(self.data.publishStreamId);
+          streamInfo = await zg.startPusher(self.data.publishStreamId);
         }
 
         const { streamId, url } = streamInfo;
-        console.log('>>>[liveroom-room] getPusherUrl, streamId  ', streamId, ' url ', url);
+        console.log('>>>[liveroom-room] startPusher, streamId  ', streamId, ' url ', url);
         self.setPushUrl(url);
       } else {
         if (!self.data.pushUrl && streamList.length === 0) {
