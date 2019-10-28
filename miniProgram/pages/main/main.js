@@ -1,6 +1,6 @@
 let {sharePage} = require('../../utils/util.js');
 let { ZegoClient } = require("/../../dist_mp/jZego-wx-1.0.0.js");
-// let { ZegoClient } = require("miniprogram-zego");
+// let { ZegoClient } = require("miniprogram-zego-express-test");
 
 Page({
 

@@ -1,11 +1,11 @@
 let { ZegoClient } = require("../../../dist_mp/jZego-wx-1.0.0.js");
-// let { ZegoClient } = require("miniprogram-zego");
+// let { ZegoClient } = require("miniprogram-zego-express-test");
 let { format, sharePage } = require("../../../utils/util.js");
 let { getLoginToken } = require("../../../utils/server.js");
 let zg;
 //获取应用实例
 const app = getApp();
-let { appId, wsServerURL, logServerURL, tokenURL, isCodec } = app.globalData;
+let { appId, wsServerURL, isCodec } = app.globalData;
 
 
 /**
@@ -942,9 +942,7 @@ Page({
 
     //刷新全局变量
     appId = getApp().globalData.appId;
-    wsServerURL = getApp().globalData.wsServerURL;
-    logServerURL = getApp().globalData.logServerURL;
-    tokenURL = getApp().globalData.tokenURL;
+    wsServerURL = getApp().globalData.wsServerURL;    
   },
 
   /**
