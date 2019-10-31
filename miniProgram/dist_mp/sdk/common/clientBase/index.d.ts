@@ -1,5 +1,5 @@
 import { Common } from './common';
-import { Config, ERRO, StreamInfo, CdnPushConfig, mixStreamConfig } from '../zego.entity';
+import { ERRO, StreamInfo, CdnPushConfig, MixStreamConfig, webConfig, wxConfig } from '../zego.entity';
 export declare abstract class BaseCenter extends Common {
     constructor();
     init(): void;
@@ -16,11 +16,11 @@ export declare abstract class BaseCenter extends Common {
      *
      *
      * ****/
-    config(option: Config): boolean;
+    setConfig(option: webConfig | wxConfig): boolean;
     login(roomId: string, token: string, param?: {
         authToken: string;
     }): Promise<StreamInfo[]>;
-    logout(): boolean;
+    logout(): Promise<void>;
     setUserStateUpdate(update: boolean): void;
     sendCustomCommand(dstMembers: string[], customContent: string | Record<string, any>, success: (seq: number, customContent: string) => void, error: (err: ERRO, seq: number, customContent: string) => void): boolean;
     sendRoomMsg(msgCategory: 1 | 2, msgContent: string): Promise<{
@@ -37,7 +37,7 @@ export declare abstract class BaseCenter extends Common {
     inviteJoinLive(destIdName: string, success: (seq: number) => void, error: (err: ERRO, seq: number) => void, resultCallback: (result: boolean, fromUserId: string, fromUserName: string) => void): boolean;
     endJoinLive(destIdName: string, success: (seq: number) => void, error: (err: ERRO, seq: number) => void): boolean;
     respondJoinLive(requestId: string, respondResult: boolean, success?: (seq: number) => void, error?: (err: ERRO, seq: number) => void): boolean;
-    startMixStream(mixStreamConfig: mixStreamConfig): Promise<Array<{
+    startMixStream(mixStreamConfig: MixStreamConfig): Promise<Array<{
         streamId?: string;
         rtmpUrl: string;
         hlsUrl: string;
@@ -46,7 +46,8 @@ export declare abstract class BaseCenter extends Common {
     stopMixStream(taskId: string): Promise<void>;
     publishTarget(cdnPushConfig: CdnPushConfig): Promise<void>;
     updateStreamExtraInfo(streamid: string, extraInfo: string): boolean;
-    on(listener: string, callBack: Function): void;
     actionListener(listener: string, ...args: Array<any>): void;
+    bindListener(listener: string, callBack: Function): boolean;
+    deleteListener(listener: string, callBack?: Function): boolean;
     static getCurrentVersion(): string;
 }

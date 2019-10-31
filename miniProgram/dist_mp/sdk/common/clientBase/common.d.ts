@@ -19,20 +19,18 @@ export declare abstract class Common {
     messageHandler: MessageHandler;
     liveHandler: LiveHandler;
     stateCenter: StateCenter;
-    abstract getSocket(server: string): ZegoWebSocket | WebSocket;
-    abstract setCDNInfo(streamInfo: {
-        urlsFlv: string;
-        urlsHls: string;
-        urlsRtmp: string;
+    protected getSocket(server: string): WebSocket | ZegoWebSocket | null;
+    protected setCDNInfo(streamInfo: {
+        urlFlv: string;
+        urlHls: string;
+        urlRtmp: string;
     }, streamItem: {
-        urls_flv: string;
-        urls_m3u8: string;
-        urls_rtmp: string;
+        urls_flv: string | string[];
+        urls_m3u8: string | string[];
+        urls_rtmp: string | string[];
     }): void;
-    abstract WebrtcOnPublishStateUpdateHandle(type: 0 | 1 | 2, streamid: string, error: ERRO): void;
-    abstract loginBodyData(): {
-        [index: string]: string | number | any[];
-    };
+    protected WebrtcOnPublishStateUpdateHandle(type: 0 | 1 | 2, streamid: string, error: ERRO): void;
+    protected loginBodyData(): void;
     resetStreamCenter(): void;
     protected handleFetchWebRtcUrlRsp(msg: any, success?: (stream: MediaStream) => void): void;
 }

@@ -23,7 +23,7 @@ export declare class RoomHandler {
     private handleLoginSuccess;
     private openHandler;
     private closeHandler;
-    logout(): boolean;
+    logout(success: () => void, error: (err: ERRO) => void): void;
     setUserStateUpdate(update: boolean): boolean;
     fetchUserList(): void;
     private fetchUserListWithPageV2;

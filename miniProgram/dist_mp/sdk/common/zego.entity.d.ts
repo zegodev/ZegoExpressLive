@@ -16,14 +16,21 @@ export declare enum ENUM_REMOTE_TYPE {
     websocket = 1,
     https = 2
 }
-export interface Config {
+export interface webConfig {
     nickName?: string;
     logLevel?: ENUM_LOG_LEVEL;
     logUrl?: string;
     remoteLogLevel?: ENUM_LOG_LEVEL;
-    testEnvironment?: boolean;
 }
-export interface UsabilityDedection {
+export interface wxConfig {
+    nickName?: string;
+    logLevel?: ENUM_LOG_LEVEL;
+    logUrl?: string;
+    remoteLogLevel?: ENUM_LOG_LEVEL;
+    pushSourceType?: 0 | 1;
+    playSourceType?: 0 | 1;
+}
+export interface UsabilityDetection {
     webRtc: boolean;
     capture: boolean;
     videoDecodeType: {
@@ -248,11 +255,11 @@ export interface StreamInfo {
     userId: string;
     userName: string;
     extraInfo: string;
-    urlsFlv: string[] | null;
-    urlsRtmp: string[] | null;
-    urlsHls: string[] | null;
-    urlsHttpsFlv: string[] | null;
-    urlsHttpsHls: string[] | null;
+    urlsFlv: string | null;
+    urlsRtmp: string | null;
+    urlsHls: string | null;
+    urlsHttpsFlv: string | null;
+    urlsHttpsHls: string | null;
 }
 export interface ERRO {
     code: string | number;
@@ -344,7 +351,7 @@ export interface Constraints {
         frameRate?: number;
     } | MediaStreamConstraints | boolean;
     external?: {
-        source: HTMLElement | MediaStream;
+        source: HTMLMediaElement | MediaStream;
         bitRate?: number;
     } | MediaStreamConstraints;
 }
@@ -406,19 +413,17 @@ export interface AudioMixConfig {
     effectId: number;
 }
 export interface CdnPushConfig {
-    type: string;
+    type: 'addpush' | 'delpush' | 'clearpush';
     streamId: string;
     pushUrl: string;
 }
-export interface QualityStats {
+export interface webQualityStats {
     video: {
         videoBitrate: number;
         videoFPS: number;
         videoTransferFPS?: number;
         frameHeight?: number;
         frameWidth?: number;
-        videoHeight?: number;
-        videoWidth?: number;
     };
     audio: {
         audioBitrate: number;
@@ -436,7 +441,21 @@ export interface QualityStats {
     pliCount?: number;
     totalRoundTripTime?: number;
 }
-export interface mixStreamConfig {
+export interface wxQualityStats {
+    video: {
+        videoBitrate: number;
+        videoFPS: number;
+        videoHeight?: number;
+        videoWidth?: number;
+    };
+    audio: {
+        audioBitrate: number;
+    };
+    streamId: string;
+    type: 0 | 1;
+    roomId: '';
+}
+export interface MixStreamConfig {
     taskId: string;
     inputList: Array<{
         streamId: string;
@@ -458,9 +477,9 @@ export interface mixStreamConfig {
         outputAudioBitrate?: number;
         outputAudioChannels?: number;
     }>;
-    advance?: mixStreamAdvance;
+    advance?: MixStreamAdvance;
 }
-export interface mixStreamAdvance {
+export interface MixStreamAdvance {
     userData?: string;
     outputBgColor?: number;
     outputBgImage?: string;
@@ -474,10 +493,81 @@ export interface mixStreamAdvance {
             right: number;
         };
     };
-    extraParams: Array<{
+    extraParams?: Array<{
         key: string;
         value: string;
     }>;
+}
+export interface WebListener {
+    userStateUpdate: (roomId: string, userList: UserInfo[]) => void;
+    totalUserList: (roomId: string, userList: {
+        userId: string;
+        userName: string;
+    }[]) => void;
+    updateOnlineCount: (roomId: string, userCount: number) => void;
+    recvCustomCommand: (fromUserId: string, fromIdName: string, customContent: string) => void;
+    recvRoomMsg: (chatData: Array<{
+        userId: string;
+        userName: string;
+        msgId: number;
+        type: number;
+        content: string;
+        sendTime: number;
+    }>) => void;
+    remoteStreamUpdated: (type: 0 | 1, streamList: StreamInfo[]) => void;
+    streamExtraInfoUpdated: (streamList: {
+        streamId: string;
+        userId: string;
+        userName: string;
+        extraInfo: string;
+    }[]) => void;
+    pullStateChange: (result: {
+        type: 0 | 1 | 2;
+        streamId: string;
+        error: ERRO;
+    }) => void;
+    publishStateChange: (result: {
+        type: 0 | 1 | 2;
+        streamId: string;
+        error: ERRO;
+    }) => void;
+    roomStateUpdate: (state: 'KICKOUT' | 'DISCONNECT' | 'RECONNECT', error: ERRO) => void;
+    screenSharingEnded: () => void;
+}
+export interface WxListener {
+    userStateUpdate: (roomId: string, userList: UserInfo[]) => void;
+    totalUserList: (roomId: string, userList: {
+        userId: string;
+        userName: string;
+    }[]) => void;
+    updateOnlineCount: (roomId: string, userCount: number) => void;
+    recvCustomCommand: (fromUserId: string, fromIdName: string, customContent: string) => void;
+    recvRoomMsg: (chatData: Array<{
+        userId: string;
+        userName: string;
+        msgId: number;
+        type: number;
+        content: string;
+        sendTime: number;
+    }>) => void;
+    remoteStreamUpdated: (type: 0 | 1, streamList: StreamInfo[]) => void;
+    streamExtraInfoUpdated: (streamList: {
+        streamId: string;
+        userId: string;
+        userName: string;
+        extraInfo: string;
+    }[]) => void;
+    pullStateChange: (result: {
+        type: 0 | 1 | 2;
+        streamId: string;
+        error: ERRO;
+    }) => void;
+    publishStateChange: (result: {
+        type: 0 | 1 | 2;
+        streamId: string;
+        error: ERRO;
+    }) => void;
+    roomStateUpdate: (state: 'KICKOUT' | 'DISCONNECT' | 'RECONNECT', error: ERRO) => void;
 }
 export declare enum ENUM_PLAY_SOURCE_TYPE {
     auto = 0,

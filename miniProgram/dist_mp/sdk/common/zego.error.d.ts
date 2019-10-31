@@ -39,6 +39,14 @@ export declare const commonErrorList: {
         code: number;
         msg: string;
     };
+    MIX_VIDEOC: {
+        code: number;
+        msg: string;
+    };
+    MIX_OUTPUT: {
+        code: number;
+        msg: string;
+    };
 };
 export declare const liveRoomErrorList: {
     SERVER: {

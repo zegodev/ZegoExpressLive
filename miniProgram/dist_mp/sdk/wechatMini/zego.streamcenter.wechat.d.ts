@@ -6,7 +6,7 @@ import { LoggerWechat } from './zego.logger.wx';
 import { ZegoDataReport } from '../common/zego.datareport';
 import { StateCenter } from '../common/clientBase/stateCenter';
 import { Logger } from '../common/zego.logger';
-import { QualityStats, StreamQuality } from '../common/zego.entity';
+import { wxQualityStats, StreamQuality } from '../common/zego.entity';
 export declare class ZegoStreamCenterWechat extends ZegoStreamCenter {
     dataReport: ZegoDataReport;
     playerList: any;
@@ -59,6 +59,6 @@ export declare class ZegoStreamCenterWechat extends ZegoStreamCenter {
         videoWidth: any;
     }, playerType: number): void;
     onStreamUrlUpdate(streamid: string, url: string, playerType: number): void;
-    getStats(callBack: (stats: QualityStats) => void): void;
-    setStats(streamId: string, streamQuality: StreamQuality, type: 0 | 1, callBack: (stats: QualityStats) => void): void;
+    getStats(callBack: (stats: wxQualityStats) => void): void;
+    setStats(streamId: string, streamQuality: StreamQuality, type: 0 | 1, callBack: (stats: wxQualityStats) => void): void;
 }

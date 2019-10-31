@@ -30,7 +30,10 @@ export declare class ZegoStreamCenterWeb extends ZegoStreamCenter {
     onPublishStateUpdate(type: number, streamid: string, error: number | ERRO | undefined): void;
     onPublishQualityUpdate(streamid: any, streamQuality: any): void;
     onUpdateHeartBeartIntervalHandle(interval: number): void;
-    switchDevice(type: 'audio' | 'video', localStream: MediaStream, deviceId: string, success: Function, error: Function): void;
+    switchDevice(localStream: MediaStream, deviceId: {
+        cameraId?: string;
+        microphoneId?: string;
+    }, success: Function, error: Function): void;
     enableMicrophone(localStream: MediaStream, enable: boolean): boolean;
     enableCamera(localStream: MediaStream, enable: boolean): boolean;
     startPreview(mediaStreamConstraints: MediaStreamConstraints, success: Function, error: (err: ERRO) => void): boolean;

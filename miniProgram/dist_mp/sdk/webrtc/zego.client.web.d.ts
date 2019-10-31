@@ -1,4 +1,4 @@
-import { PlayOption, Constraints, QualityStats, ERRO, UsabilityDedection, PublishOption } from '../common/zego.entity';
+import { PlayOption, Constraints, webQualityStats, ERRO, UsabilityDetection, PublishOption, WebListener, webConfig } from '../common/zego.entity';
 import { ZegoStreamCenterWeb } from './zego.streamCenter.web';
 import { AudioMixUtil } from '../util/AudioMixUtil';
 import { BaseCenter } from '../common/clientBase/index';
@@ -11,19 +11,24 @@ export declare class ZegoClient extends BaseCenter {
     static screenShotReady: boolean;
     static mediaRecorder: ZegoMediaRecorder;
     static recordedBlobs: Blob[];
-    getSocket(server: string): WebSocket;
-    enableCamera(localStream: MediaStream, enable: boolean): boolean;
-    enableMicrophone(localStream: MediaStream, enable: boolean): boolean;
+    config(option: webConfig): boolean;
+    protected getSocket(server: string): WebSocket;
+    on<k extends keyof WebListener>(listener: k, callBack: WebListener[k]): boolean;
+    off<k extends keyof WebListener>(listener: k, callBack?: WebListener[k]): boolean;
+    enableStream(localStream: MediaStream, option: {
+        video?: boolean;
+        audio?: boolean;
+    }): boolean;
     setAudioOutput(localVideo: HTMLMediaElement, audioOutput: string): boolean;
     setCustomSignalUrl(signalUrl: string): false | undefined;
     private setQualityMonitorCycle;
-    getStats(interval: number, callBack: (stats: QualityStats) => void): void;
+    getStats(interval: number, callBack: (stats: webQualityStats) => void): void;
     getRemoteStream(streamId: string, playOption?: PlayOption): Promise<MediaStream>;
     stopRemoteStream(streamId: string): boolean;
     createLocalStream(option?: Constraints): Promise<MediaStream>;
     destroyLocalStream(localStream: MediaStream): boolean;
     publishLocalStream(streamId: string, localStream: MediaStream, publishOption?: PublishOption): boolean;
-    stopPublishLocalStream(streamId: string): boolean;
+    stopPublishLocalStream(streamId: string): Promise<void>;
     private preloadEffect;
     private playEffect;
     private pauseEffect;
@@ -34,32 +39,35 @@ export declare class ZegoClient extends BaseCenter {
     private setMixingAudioVolume;
     private getPublisher;
     private startScreenShotChrome;
-    private startScreenSharingChrome;
+    private startScreenSharing;
     private startScreenShotFirFox;
     private stopScreenShot;
-    switchDevice(type: 'audio' | 'video', localStream: MediaStream, deviceId: string): Promise<void>;
-    WebrtcOnPublishStateUpdateHandle(type: 0 | 1 | 2, streamId: string, error: ERRO): void;
-    setCDNInfo(streamInfo: {
-        urlsHttpsFlv: string;
-        urlsHttpsHls: string;
-        urlsFlv: string;
-        urlsHls: string;
-        urlsRtmp: string;
+    switchDevice(localStream: MediaStream, device: {
+        cameraId: string;
+        microphoneId: string;
+    }): Promise<void>;
+    protected WebrtcOnPublishStateUpdateHandle(type: 0 | 1 | 2, streamId: string, error: ERRO): void;
+    protected setCDNInfo(streamInfo: {
+        urlHttpsFlv: string;
+        urlHttpsHls: string;
+        urlFlv: string;
+        urlHls: string;
+        urlRtmp: string;
     }, streamItem: {
-        urls_flv: string;
-        urls_m3u8: string;
-        urls_rtmp: string;
-        urls_https_flv: string;
-        urls_https_m3u8: string;
+        urls_flv: string | string[];
+        urls_m3u8: string | string[];
+        urls_rtmp: string | string[];
+        urls_https_flv: string | string[];
+        urls_https_m3u8: string | string[];
     }): void;
-    loginBodyData(): {
+    protected loginBodyData(): {
         [index: string]: string | number | any[];
     };
     private screenStreamFrom;
     filterStreamList(streamId?: string): any;
     private voiceChange;
     private voiceBack;
-    static detectRTC(): Promise<UsabilityDedection>;
+    static detectRTC(): Promise<UsabilityDetection>;
     enumDevices(): Promise<{
         microphones: Array<{
             label: string;
@@ -74,7 +82,7 @@ export declare class ZegoClient extends BaseCenter {
             deviceId: string;
         }>;
     }>;
-    static enumDevices(deviceInfoCallback: Function, error: (err: ERRO) => void): void;
+    private static enumDevices;
     static getAudioInfo(localStream: MediaStream, errCallBack: (param: any) => void, option?: {
         type: string;
         bufferSize?: number;
@@ -90,6 +98,6 @@ export declare class ZegoClient extends BaseCenter {
     static saveRecord(name: string): void;
     static takeSnapShot(el: HTMLVideoElement, img: HTMLImageElement): void;
     static saveSnapShot(el: HTMLVideoElement, name: string): void;
-    bindWindowListener(): void;
-    onPublishStateUpdateHandle(type: 0 | 1 | 2, streamId: string, error: ERRO): void;
+    private bindWindowListener;
+    private onPublishStateUpdateHandle;
 }

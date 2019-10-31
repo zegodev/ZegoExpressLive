@@ -1,5 +1,5 @@
-let { ZegoClient } = require("../../../dist_mp/jZego-wx-express-1.0.0.js");
-// let { ZegoClient } = require("miniprogram-zego-express-test");
+let { ZegoClient } = require("../../../dist_mp/ZegoExpressMiniProgram-1.0.0.js");
+// let { ZegoClient } = require("miniprogram-zego-express");
 let { format, sharePage } = require("../../../utils/util.js");
 let { getLoginToken } = require("../../../utils/server.js");
 let zg;
@@ -256,7 +256,7 @@ Page({
     });
 
     // 接收房间IM消息
-    zg.on('recvRoomMsg', (chat_data, server_msg_id, ret_msg_id) => {
+    zg.on('recvRoomMsg', (chat_data) => {
       console.log(">>>[liveroom-room] zg recvRoomMsg, data: ", chat_data);
 
       // 收到其他成员的回到前台通知

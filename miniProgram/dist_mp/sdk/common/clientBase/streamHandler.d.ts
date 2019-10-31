@@ -1,6 +1,6 @@
 import { SocketCenter } from './socketCenter';
 import { StateCenter } from './stateCenter';
-import { CdnPushConfig, mixStreamConfig, ERRO } from '../zego.entity';
+import { CdnPushConfig, MixStreamConfig, ERRO } from '../zego.entity';
 import { Logger } from '../zego.logger';
 export declare class StreamHandler {
     private logger;
@@ -8,9 +8,9 @@ export declare class StreamHandler {
     private stateCenter;
     constructor(logger: Logger, stateCenter: StateCenter, socketCenter: SocketCenter);
     setCDNInfo(streamInfo: {
-        urlsFlv: string;
-        urlsHls: string;
-        urlsRtmp: string;
+        urlFlv: string;
+        urlHls: string;
+        urlRtmp: string;
     }, streamItem: {
         urls_flv: string;
         urls_m3u8: string;
@@ -35,13 +35,13 @@ export declare class StreamHandler {
         extraInfo: any;
         streamId: any;
         roomId: string;
-        urlsFlv: string;
-        urlsRtmp: string;
-        urlsHls: string;
-        urlsHttpsFlv: string;
-        urlsHttpsHls: string;
+        urlFlv: string;
+        urlRtmp: string;
+        urlHls: string;
+        urlHttpsFlv: string;
+        urlHttpsHls: string;
     }[];
-    updateMixStream(mixStreamConfig: mixStreamConfig, successCallback: Function, errorCallback: (err: ERRO) => void): boolean;
+    updateMixStream(mixStreamConfig: MixStreamConfig, successCallback: Function, errorCallback: (err: ERRO) => void): boolean;
     publishTarget(cdnPushConfig: CdnPushConfig, success: Function, error: Function): void;
     stopMixStream(taskid: string, successCallback: Function, errorCallback: (err: ERRO) => void): boolean;
     updateStreamExtraInfo(streamid: string, extraInfo: string): boolean;
